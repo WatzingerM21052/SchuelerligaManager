@@ -4,7 +4,6 @@ on:
   push:
     branches: [ main ] 
 
-# Berechtigungen für GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -24,19 +23,22 @@ jobs:
       with:
         dotnet-version: '8.0.x' 
 
-    # Baut die App im Release-Modus
+    # 🔴 HIER IST DER FIX: Installiert die fehlenden WebAssembly Tools
+    - name: Install WASM Workloads
+      run: dotnet workload install wasm-tools
+
     - name: Publish .NET Project
       run: dotnet publish ChessTournamentManager.Client/ChessTournamentManager.Client.csproj -c Release -o release --nologo
 
-    # 🔴 HIER WURDE ES ERSETZT: Passt die Basis-URL auf dein Repo "SchuelerligaManager" an
+    # Passt die Basis-URL auf dein Repo an
     - name: Change base-tag in index.html
       run: sed -i 's/<base href="\/" \/>/<base href="\/SchuelerligaManager\/" \/>/g' release/wwwroot/index.html
 
-    # FIX FÜR BLAZOR ROUTING: Kopiert index.html zu 404.html, falls man die Seite neu lädt
-    - name: Fix SPA Routing (copy index.html to 404.html)
+    # Kopiert index.html zu 404.html (Blazor Routing Fix)
+    - name: Fix SPA Routing
       run: cp release/wwwroot/index.html release/wwwroot/404.html
 
-    # FIX FÜR GITHUB PAGES: Verhindert, dass Jekyll System-Ordner wie _framework ignoriert
+    # Verhindert, dass System-Ordner ignoriert werden
     - name: Add .nojekyll file
       run: touch release/wwwroot/.nojekyll
 
