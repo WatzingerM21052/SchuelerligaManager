@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ChessTournamentManager.Client/ChessTournamentManager.Client.csproj" />
+  <Project Path="ChessTournamentManager.Shared/ChessTournamentManager.Shared.csproj" />
+</Solution>

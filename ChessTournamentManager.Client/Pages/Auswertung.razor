@@ -1,0 +1,454 @@
+@page "/auswertung"
+@using ChessTournamentManager.Shared.Models
+@using Microsoft.EntityFrameworkCore
+@using System.Text
+@inject IDbContextFactory<ChessDbContext> DbFactory
+@inject IJSRuntime JS
+
+<PageTitle>Turnier-Auswertung</PageTitle>
+
+<style>
+    @@media print {
+        body {
+            background: white !important;
+        }
+
+        .d-print-none {
+            display: none !important;
+        }
+
+        .print-only {
+            display: block !important;
+        }
+
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10pt !important;
+        }
+
+        th {
+            background-color: #343a40 !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .table-warning {
+            background-color: #fff3cd !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+    }
+
+    .print-only {
+        display: none;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3 min-vh-100 bg-light d-print-none">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Turnier-Analytics
+                2024/2025</h2>
+            <span class="text-muted small">Live-Analytik und Enterprise Matrix-Reporting</span>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary shadow-sm" @onclick="ExportMatrixToExcel">
+                <i class="bi bi-filetype-csv me-1"></i> Excel-Matrix Export (Alle Klassen)
+            </button>
+            <button class="btn btn-outline-secondary shadow-sm" @onclick="PrintPage">
+                <i class="bi bi-printer me-1"></i> Bericht Drucken / PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-auto text-muted fw-bold text-uppercase small"><i class="bi bi-funnel me-1"></i>
+                    Filter:</div>
+                <div class="col-md-3">
+                    <select class="form-select form-select-sm" @onchange="OnAgeChanged">
+                        <option value="Alle">Gesamtansicht (Alle Klassen)</option>
+                        @foreach (var age in AvailableAges)
+                        {
+                            <option value="@age" selected="@(SelectedAge == age)">
+                                Klasse @age</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select form-select-sm" @onchange="OnClubChanged">
+                        <option value="Alle">Alle Vereine</option>
+                        @foreach (var club in AvailableClubs)
+                        {
+                            <option value="@club"
+                                selected="@(SelectedClub == club)">@club</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-auto ms-auto">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="streich" @bind="UseStreichresultat"
+                            @bind:after="ApplyFilters">
+                        <label class="form-check-label fw-bold text-dark small" for="streich"><i
+                                class="bi bi-scissors me-1"></i> 1 Streichresultat anwenden</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-3 pb-0">
+                    <h6 class="text-muted fw-bold text-uppercase small m-0">Altersklassen-Verteilung</h6>
+                </div>
+                <div class="card-body pt-2" style="height: 200px;">
+                    <canvas id="ageChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-3 pb-0">
+                    <h6 class="text-muted fw-bold text-uppercase small m-0">Vereins-Verteilung (Top 5)</h6>
+                </div>
+                <div class="card-body pt-2" style="height: 200px;">
+                    <canvas id="clubChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (AllRows != null)
+    {
+        var groupedRows = SelectedAge == "Alle" ? FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g
+        => g.Key) : FilteredRows.GroupBy(r => r.AgeGroup);
+
+        foreach (var group in groupedRows)
+        {
+            var classRows = group.ToList();
+
+            <div class="card border-0 shadow-sm mb-5">
+                <div class="card-header bg-white border-bottom-0 pt-3">
+                    <h5 class="fw-bold text-dark mb-0">Altersklasse @group.Key</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th colspan="5" class="border-0 bg-white"></th>
+                                @foreach (var tourney in AllTournaments)
+                                {
+                                    <th class="text-center bg-light text-truncate"
+                                        style="max-width: 80px;">@tourney.Name</th>
+                                }
+                            </tr>
+                            <tr class="text-muted small">
+                                <th class="text-center" style="width: 50px;">Rg.</th>
+                                <th>Name</th>
+                                <th>Verein</th>
+                                <th class="text-center" style="width: 60px;">Pkt</th>
+                                <th class="text-center" style="width: 50px;">Sp</th>
+                                @foreach (var tourney in AllTournaments)
+                                {
+                                    <th class="text-center fw-normal">(@classRows.Count(r
+                                                                    => r.Results.ContainsKey(tourney.TournamentId)) Teiln.)</th>
+                                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in classRows)
+                            {
+                                // TOP 5 ORANGE MARKIEREN (MASTERS QUALI)
+                                string rowClass = row.Rank <= 5 ? "table-warning" : "";
+
+                                <tr class="@rowClass">
+                                    <td class="text-center fw-bold text-dark">@row.Rank</td>
+                                    <td class="fw-bold text-dark">
+                                        @row.Lastname @row.Firstname
+                                        @if (row.Rank <= 5)
+                                        {
+                                            <i class="bi bi-award-fill text-warning ms-1"
+                                                title="Masters Qualifikation"></i>
+                                        }
+                                    </td>
+                                    <td class="text-muted">@row.ClubName</td>
+                                    <td class="text-center fw-bold text-success fs-6">@row.EffectivePoints</td>
+                                    <td class="text-center">@row.TournamentsCount</td>
+                                    @foreach (var tourney in AllTournaments)
+                                    {
+                                        <td class="text-center">
+                                            @if (row.Results.TryGetValue(tourney.TournamentId, out var result))
+                                            {
+                                                <span class="d-block fw-bold text-dark">@result.Points</span>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="text-black-50">-</span>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="bg-light fw-bold text-dark">
+                            <tr>
+                                <td colspan="3" class="text-end pe-3 text-uppercase small">Summen @group.Key:</td>
+                                <td class="text-center">@classRows.Sum(r => r.EffectivePoints)</td>
+                                <td class="text-center">@classRows.Sum(r => r.TournamentsCount)</td>
+                                @foreach (var tourney in AllTournaments)
+                                {
+                                    <td class="text-center">@classRows.Count(r => r.Results.ContainsKey(tourney.TournamentId))</td>
+                                }
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@if (AllRows != null)
+{
+    var printGroups = SelectedAge == "Alle" ? FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g =>
+    g.Key) : FilteredRows.GroupBy(r => r.AgeGroup);
+
+    <div class="print-only">
+        <h1 style="text-align: center; margin-bottom: 0;">Schülerliga OÖ - Gesamtwertung</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 2rem;">Stand: @DateTime.Now.ToShortDateString()
+            @(UseStreichresultat ? "| inkl. Streichresultat" : "")</p>
+
+        @foreach (var group in printGroups)
+        {
+            var classRows = group.ToList();
+
+            <h3 style="margin-top: 2rem; border-bottom: 2px solid #000; padding-bottom: 5px;">Schülerliga Gesamtrang @group.Key
+            </h3>
+            <table class="table table-bordered table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th colspan="5" style="background: white; border: none;"></th>
+                        @foreach (var tourney in AllTournaments)
+                        {
+                            <th class="text-center"
+                                style="background: #f8f9fa; color: #000; font-size: 8pt;">@tourney.Name</th>
+                        }
+                    </tr>
+                    <tr>
+                        <th class="text-center" style="width: 40px;">Rg.</th>
+                        <th>Name</th>
+                        <th>Verein</th>
+                        <th class="text-center" style="width: 50px;">Pkt</th>
+                        <th class="text-center" style="width: 40px;">Sp</th>
+                        @foreach (var tourney in AllTournaments)
+                        {
+                            <th class="text-center"
+                                style="font-weight: normal; font-size: 8pt;">(@classRows.Count(r =>
+                                                    r.Results.ContainsKey(tourney.TournamentId)))</th>
+                                }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in classRows)
+                    {
+                        <tr class="@(row.Rank <= 5 ? "table-warning" : "")">
+                            <td class="text-center" style="font-weight: bold;">@row.Rank</td>
+                            <td style="font-weight: bold;">@row.Lastname @row.Firstname</td>
+                            <td>@row.ClubName</td>
+                            <td class="text-center" style="font-weight: bold;">@row.EffectivePoints</td>
+                            <td class="text-center">@row.TournamentsCount</td>
+                            @foreach (var tourney in AllTournaments)
+                            {
+                                <td class="text-center">@(row.Results.TryGetValue(tourney.TournamentId, out var res) ?
+                                                        res.Points.ToString() : "")</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa; font-weight: bold;">
+                        <td colspan="3" class="text-end pe-2">SUMMEN:</td>
+                        <td class="text-center">@classRows.Sum(r => r.EffectivePoints)</td>
+                        <td class="text-center">@classRows.Sum(r => r.TournamentsCount)</td>
+                        @foreach (var tourney in AllTournaments)
+                        {
+                            <td class="text-center">@classRows.Count(r =>
+                                                    r.Results.ContainsKey(tourney.TournamentId))</td>
+                                }
+                    </tr>
+                </tfoot>
+            </table>
+            <div class="page-break"></div>
+        }
+    </div>
+}
+
+@code {
+    private List<Tournament> AllTournaments = new();
+    private List<LeaderboardRow>? AllRows;
+    private List<LeaderboardRow> FilteredRows = new();
+
+    private string SelectedAge = "Alle";
+    private string SelectedClub = "Alle";
+    private bool UseStreichresultat = false;
+
+    private List<string> AvailableAges = new();
+    private List<string> AvailableClubs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        AllTournaments = await db.Tournaments.OrderBy(t => t.Date).ToListAsync();
+
+        var rawPlayers = await db.Players.Include(p => p.Club).Include(p => p.PlayerTournaments).Where(p =>
+        p.PlayerTournaments.Any()).ToListAsync();
+
+        AllRows = rawPlayers.Select(p => new LeaderboardRow
+        {
+            PlayerId = p.PlayerId,
+            Firstname = p.Firstname,
+            Lastname = p.Lastname,
+            ClubName = p.Club?.Name ?? "Vereinslos",
+            AgeGroup = string.IsNullOrWhiteSpace(p.AgeGroup) ? "Ohne" : p.AgeGroup,
+            TournamentsCount = p.PlayerTournaments.Count,
+            Results = p.PlayerTournaments.ToDictionary(pt => pt.TournamentId, pt => pt)
+        }).ToList();
+
+        AvailableAges = AllRows.Select(r => r.AgeGroup).Distinct().OrderBy(a => a).ToList();
+        AvailableClubs = AllRows.Select(r => r.ClubName).Distinct().OrderBy(c => c).ToList();
+
+        ApplyFilters();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Rendern der Profi-Diagramme mit Chart.js
+        if (FilteredRows.Any())
+        {
+            var ageStats = FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g => g.Key).Select(g => new
+            {
+                Label = g.Key,
+                Count = g.Count()
+            }).ToList();
+            await JS.InvokeVoidAsync("window.chartManager.renderBarChart", "ageChart", "Altersklassen", ageStats.Select(x =>
+            x.Label).ToArray(), ageStats.Select(x => x.Count).ToArray(), "#0d6efd");
+
+            var clubStats = FilteredRows.GroupBy(r => r.ClubName).OrderByDescending(g => g.Count()).Take(5).Select(g => new
+            {
+                Label
+            = g.Key,
+                Count = g.Count()
+            }).ToList();
+            await JS.InvokeVoidAsync("window.chartManager.renderBarChart", "clubChart", "Vereine", clubStats.Select(x =>
+            x.Label).ToArray(), clubStats.Select(x => x.Count).ToArray(), "#198754");
+        }
+    }
+
+    private void OnAgeChanged(ChangeEventArgs e) { SelectedAge = e.Value?.ToString() ?? "Alle"; ApplyFilters(); }
+    private void OnClubChanged(ChangeEventArgs e) { SelectedClub = e.Value?.ToString() ?? "Alle"; ApplyFilters(); }
+
+    private void ApplyFilters()
+    {
+        if (AllRows == null) return;
+
+        var query = AllRows.AsEnumerable();
+        if (SelectedAge != "Alle") query = query.Where(r => r.AgeGroup == SelectedAge);
+        if (SelectedClub != "Alle") query = query.Where(r => r.ClubName == SelectedClub);
+
+        var listToProcess = query.ToList();
+
+        foreach (var row in listToProcess)
+        {
+            row.RawTotalPoints = row.Results.Values.Sum(r => r.Points);
+            if (UseStreichresultat && row.TournamentsCount >= 3)
+            {
+                row.EffectivePoints = row.RawTotalPoints -
+            row.Results.Values.Min(r => r.Points); row.IsDropped = true;
+            }
+            else { row.EffectivePoints = row.RawTotalPoints; row.IsDropped = false; }
+        }
+
+        var grouped = listToProcess.GroupBy(r => r.AgeGroup);
+        var finalSortedList = new List<LeaderboardRow>();
+
+        foreach (var group in grouped)
+        {
+            var sortedClass = group.OrderByDescending(r => r.EffectivePoints).ThenByDescending(r => r.TournamentsCount).ThenBy(r =>
+            r.Lastname).ToList();
+            int currentRank = 1;
+            for (int i = 0; i < sortedClass.Count; i++)
+            {
+                if (i > 0 && sortedClass[i].EffectivePoints < sortedClass[i -
+            1].EffectivePoints) currentRank = i + 1; sortedClass[i].Rank = currentRank;
+            }
+            finalSortedList.AddRange(sortedClass);
+        }
+
+        FilteredRows = finalSortedList.OrderBy(r => r.AgeGroup.Length).ThenBy(r => r.AgeGroup).ThenBy(r => r.Rank).ToList();
+        StateHasChanged();
+    }
+
+    private async Task PrintPage() => await JS.InvokeVoidAsync("window.print");
+
+    private async Task ExportMatrixToExcel()
+    {
+        if (AllRows == null) return;
+        var csv = new StringBuilder();
+        var groupedRows = SelectedAge == "Alle" ? FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g =>
+        g.Key) : FilteredRows.GroupBy(r => r.AgeGroup);
+
+        foreach (var group in groupedRows)
+        {
+            var classRows = group.ToList();
+            csv.AppendLine($"Schülerliga Gesamtrang {group.Key}");
+
+            var headers = new List<string> { "Rg.", "Name", "Verein", "Pkt", "Sp" };
+            headers.AddRange(AllTournaments.Select(t => t.Name));
+            csv.AppendLine(string.Join(";", headers));
+
+            foreach (var r in classRows)
+            {
+                var rowData = new List<string> { r.Rank.ToString(), $"{r.Lastname} {r.Firstname}", r.ClubName,
+r.EffectivePoints.ToString(), r.TournamentsCount.ToString() };
+                foreach (var t in AllTournaments)
+                {
+                    rowData.Add(r.Results.TryGetValue(t.TournamentId, out var res) ?
+                res.Points.ToString() : "");
+                }
+                csv.AppendLine(string.Join(";", rowData));
+            }
+
+            var footerData = new List<string> { "Summe", "", "", classRows.Sum(r => r.EffectivePoints).ToString(), classRows.Sum(r
+=> r.TournamentsCount).ToString() };
+            foreach (var t in AllTournaments) footerData.Add(classRows.Count(r =>
+            r.Results.ContainsKey(t.TournamentId)).ToString());
+            csv.AppendLine(string.Join(";", footerData));
+            csv.AppendLine();
+        }
+        await JS.InvokeVoidAsync("downloadFile", "Schuelerliga_Matrix.csv", csv.ToString());
+    }
+
+    public class LeaderboardRow
+    {
+        public int Rank { get; set; }
+        public int PlayerId { get; set; }
+        public string Firstname { get; set; } = string.Empty;
+        public string Lastname { get; set; } = string.Empty;
+        public string ClubName { get; set; } = string.Empty;
+        public string AgeGroup { get; set; } = string.Empty;
+        public int TournamentsCount { get; set; }
+        public Dictionary<int, PlayerTournament> Results { get; set; } = new();
+        public double RawTotalPoints { get; set; }
+        public double EffectivePoints { get; set; }
+        public bool IsDropped { get; set; }
+    }
+}

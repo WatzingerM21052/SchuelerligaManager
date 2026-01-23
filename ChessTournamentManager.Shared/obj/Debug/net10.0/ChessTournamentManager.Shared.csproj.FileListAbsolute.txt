@@ -1,0 +1,12 @@
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\bin\Debug\net10.0\ChessTournamentManager.Shared.deps.json
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\bin\Debug\net10.0\ChessTournamentManager.Shared.dll
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\bin\Debug\net10.0\ChessTournamentManager.Shared.pdb
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.csproj.AssemblyReference.cache
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.AssemblyInfoInputs.cache
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.AssemblyInfo.cs
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.csproj.CoreCompileInputs.cache
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.dll
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\refint\ChessTournamentManager.Shared.dll
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.pdb
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ref\ChessTournamentManager.Shared.dll

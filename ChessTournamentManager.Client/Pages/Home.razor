@@ -1,0 +1,160 @@
+﻿@page "/"
+@using ChessTournamentManager.Client.Services
+@using ChessTournamentManager.Shared.Models
+@using Microsoft.EntityFrameworkCore
+@inject DatabaseManager DbManager
+@inject ExcelImportService ExcelService
+@inject IDbContextFactory<ChessDbContext> DbFactory
+
+<PageTitle>System & Import</PageTitle>
+
+<div class="container-fluid px-4 py-3 min-vh-100 bg-light">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-cloud-arrow-up text-primary me-2"></i>System & Import
+            </h2>
+            <span class="text-muted small">Datenbank-Management und Excel-Dateneinspielung</span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold text-dark m-0"><i class="bi bi-database me-2 text-secondary"></i>1. Lokale
+                        Datenbank</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border text-muted small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Wiederherstellen einer existierenden Sicherung (.db Datei).
+                    </div>
+                    <InputFile OnChange="@LoadDb" accept=".db" class="form-control mb-4" />
+
+                    <hr class="text-muted" />
+                    <button class="btn btn-outline-primary" @onclick="SaveDb">
+                        <i class="bi bi-download me-1"></i> System-Backup herunterladen (Speichern)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold text-dark m-0"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>2.
+                        Turnier-Import</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border text-muted small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Einlesen einer neuen Auswertung ("chessResultsList.xlsx").
+                    </div>
+                    <InputFile OnChange="@ImportExcel" accept=".xlsx" class="form-control" />
+
+                    @if (ImportedPlayers != null)
+                    {
+                        <div class="bg-white border rounded-3 p-3 mt-4 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="fw-bold text-dark">Gefundene Datensätze:</span>
+                                <span class="badge bg-primary fs-6">@ImportedPlayers.Count Spieler</span>
+                            </div>
+                            <label class="form-label text-muted small fw-bold">Turnierbezeichnung im System</label>
+                            <input @bind="TournamentName" class="form-control mb-3"
+                                placeholder="z.B. Runde 7 Taufkirchen" />
+                            <button class="btn btn-success w-100 fw-bold" @onclick="SaveToDatabase">
+                                <i class="bi bi-check-circle me-1"></i> Daten synchronisieren & Speichern
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success mt-4 border-0 shadow-sm d-flex align-items-center">
+            <i class="bi bi-check-circle-fill fs-4 me-2"></i> @SuccessMessage
+        </div>
+    }
+</div>
+
+@code {
+    private List<Player>? ImportedPlayers;
+    private string TournamentName = "Neues Turnier";
+    private string SuccessMessage = "";
+
+    private async Task LoadDb(InputFileChangeEventArgs e)
+    {
+        using var stream = e.File.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+        await DbManager.ImportDatabase(stream);
+        SuccessMessage = "Datenbank erfolgreich wiederhergestellt.";
+    }
+
+    private async Task SaveDb() => await DbManager.DownloadDatabase();
+
+    private async Task ImportExcel(InputFileChangeEventArgs e)
+    {
+        using var stream = e.File.OpenReadStream();
+        var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+        ImportedPlayers = ExcelService.ReadExcelStream(memoryStream);
+        SuccessMessage = "";
+    }
+
+    private async Task SaveToDatabase()
+    {
+        if (ImportedPlayers == null || string.IsNullOrWhiteSpace(TournamentName)) return;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        await db.Database.EnsureCreatedAsync();
+
+        var tournament = new Tournament { Name = TournamentName, Date = DateTime.Now };
+        db.Tournaments.Add(tournament);
+        await db.SaveChangesAsync();
+
+        foreach (var p in ImportedPlayers)
+        {
+            Club? existingClub = null;
+            if (p.Club != null && !string.IsNullOrWhiteSpace(p.Club.Name))
+            {
+                existingClub = await db.Clubs.FirstOrDefaultAsync(c => c.Name.ToLower() == p.Club.Name.ToLower());
+                if (existingClub == null)
+                {
+                    existingClub = new Club { Name = p.Club.Name };
+                    db.Clubs.Add(existingClub);
+                    await db.SaveChangesAsync();
+                }
+            }
+
+            var existingPlayer = await db.Players.FirstOrDefaultAsync(dbPlayer =>
+            dbPlayer.Firstname.ToLower() == p.Firstname.ToLower() && dbPlayer.Lastname.ToLower() == p.Lastname.ToLower());
+
+            if (existingPlayer == null)
+            {
+                p.Club = null; p.ClubId = existingClub?.ClubId;
+                db.Players.Add(p); await db.SaveChangesAsync(); existingPlayer = p;
+            }
+            else
+            {
+                if (p.Elo.HasValue) existingPlayer.Elo = p.Elo;
+                if (existingPlayer.ClubId == null && existingClub != null) existingPlayer.ClubId = existingClub.ClubId;
+                db.Players.Update(existingPlayer); await db.SaveChangesAsync();
+            }
+
+            double calculatedPoints = Math.Max(10, 21 - p.TournamentRank);
+            db.PlayerTournaments.Add(new PlayerTournament
+            {
+                TournamentId = tournament.TournamentId,
+                PlayerId =
+            existingPlayer.PlayerId,
+                Points = calculatedPoints,
+                Rank = p.TournamentRank
+            });
+        }
+        await db.SaveChangesAsync();
+        ImportedPlayers = null; TournamentName = "Neues Turnier"; SuccessMessage = "Turnierdaten erfolgreich ins System integriert.";
+    }
+}
