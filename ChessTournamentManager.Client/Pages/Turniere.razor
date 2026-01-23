@@ -215,6 +215,10 @@
 }
 
 @code {
+    // NEU: Fängt den Klick von der Spieler-Seite ab
+    [SupplyParameterFromQuery]
+    public int? OpenTournamentId { get; set; }
+
     private List<Tournament>? AllTournaments;
     private List<Player>? AllPlayers;
 
@@ -237,6 +241,16 @@
         // Wir laden die Spieler einmal für die Dropdown-Liste
         using var db = await DbFactory.CreateDbContextAsync();
         AllPlayers = await db.Players.Include(p => p.Club).ToListAsync();
+
+        // AUTO-OPEN FUNKTION (Ausgelöst durch den Klick bei "Spieler")
+        if (OpenTournamentId.HasValue && AllTournaments != null)
+        {
+            var targetTournament = AllTournaments.FirstOrDefault(t => t.TournamentId == OpenTournamentId.Value);
+            if (targetTournament != null)
+            {
+                OpenResultManager(targetTournament);
+            }
+        }
     }
 
     private async Task LoadTournaments()
