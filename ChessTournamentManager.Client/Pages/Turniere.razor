@@ -1,0 +1,358 @@
+@page "/turniere"
+@using ChessTournamentManager.Shared.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<ChessDbContext> DbFactory
+@inject IJSRuntime JS
+
+<PageTitle>Turnier-Manager</PageTitle>
+
+<div class="container-fluid px-4 py-3 min-vh-100 bg-light">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-trophy text-primary me-2"></i>Turniere & Ergebnisse</h2>
+            <span class="text-muted small">Event-Verwaltung und manuelle Ergebnis-Korrektur</span>
+        </div>
+    </div>
+
+    @if (AllTournaments == null)
+    {
+        <div class="d-flex justify-content-center mt-5">
+            <div class="spinner-border text-primary"></div>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-4">Turnier-Name</th>
+                            <th>Datum (Saison)</th>
+                            <th class="text-center">Teilnehmer</th>
+                            <th class="text-end pe-4">Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in AllTournaments.OrderByDescending(t => t.Date))
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">@t.Name</td>
+                                <td class="text-muted">
+                                    <i class="bi bi-calendar3 me-1"></i> @t.Date.ToShortDateString()
+                                    <span class="badge bg-light text-dark border ms-2">@GetSeasonString(t.Date)</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary fs-6">@t.PlayerTournaments.Count Spieler</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-primary me-2" @onclick="() => OpenResultManager(t)">
+                                        <i class="bi bi-list-ol me-1"></i> Ergebnisse bearbeiten
+                                    </button>
+                                    <button class="btn btn-sm btn-light border me-1" @onclick="() => OpenEditModal(t)"
+                                        title="Namen/Datum ändern"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => OpenDeleteModal(t)"
+                                        title="Ganzes Turnier löschen"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@if (IsResultManagerOpen && SelectedTournament != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.6);">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-white border-bottom-0">
+                    <div>
+                        <h4 class="modal-title fw-bold text-dark mb-0">Ergebnisse: @SelectedTournament.Name</h4>
+                        <span class="text-muted small">Änderungen an Punkten oder Rang wirken sich sofort auf die
+                            Gesamtwertung aus.</span>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body bg-light">
+
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body p-3 d-flex align-items-end gap-2 bg-white">
+                            <div class="flex-grow-1">
+                                <label class="form-label text-muted small fw-bold">Fehlenden Spieler nachtragen:</label>
+                                <select class="form-select border-primary" @bind="NewPlayerId">
+                                    <option value="0">-- Spieler auswählen --</option>
+                                    @if (AllPlayers != null)
+                                    {
+                                        var existingIds = SelectedTournament.PlayerTournaments.Select(pt =>
+                                        pt.PlayerId).ToList();
+                                        foreach (var p in AllPlayers.Where(x => !existingIds.Contains(x.PlayerId)).OrderBy(p =>
+                                        p.Lastname))
+                                        {
+                                            <option value="@p.PlayerId">@p.Lastname @p.Firstname (@p.Club?.Name)</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div style="width: 100px;">
+                                <label class="form-label text-muted small fw-bold">Rang</label>
+                                <input type="number" class="form-control" @bind="NewPlayerRank" />
+                            </div>
+                            <div style="width: 100px;">
+                                <label class="form-label text-muted small fw-bold">Punkte</label>
+                                <input type="number" step="0.5" class="form-control" @bind="NewPlayerPoints" />
+                            </div>
+                            <button class="btn btn-success fw-bold" @onclick="AddPlayerToTournament"
+                                disabled="@(NewPlayerId == 0)">
+                                <i class="bi bi-plus-lg"></i> Hinzufügen
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light text-muted small text-uppercase">
+                                    <tr>
+                                        <th class="ps-3">Rang</th>
+                                        <th>Spieler</th>
+                                        <th>Verein</th>
+                                        <th>Klasse</th>
+                                        <th style="width: 120px;">Punkte</th>
+                                        <th class="text-end pe-3">Aktion</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pt in SelectedTournament.PlayerTournaments.OrderBy(pt => pt.Rank))
+                                    {
+                                        <tr>
+                                            <td class="ps-3">
+                                                <input type="number" class="form-control form-control-sm text-center fw-bold"
+                                                    style="width: 70px;" @bind="pt.Rank" @onblur="() => SaveResult(pt)" />
+                                            </td>
+                                            <td class="fw-bold text-dark">@pt.Player?.Lastname @pt.Player?.Firstname</td>
+                                            <td class="text-muted small">@pt.Player?.Club?.Name</td>
+                                            <td><span class="badge bg-light text-dark border">@pt.Player?.AgeGroup</span></td>
+                                            <td>
+                                                <input type="number" step="0.5"
+                                                    class="form-control form-control-sm text-success fw-bold" @bind="pt.Points"
+                                                    @onblur="() => SaveResult(pt)" />
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                    @onclick="() => RemovePlayerFromTournament(pt)"
+                                                    title="Aus Turnier entfernen">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button class="btn btn-primary px-4 fw-bold" @onclick="CloseModals">Fertig</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (IsEditModalOpen && EditingTournament != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Turnier bearbeiten</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Turniername</label>
+                        <input type="text" class="form-control" @bind="EditingTournament.Name" />
+                    </div>
+                    <div>
+                        <label class="form-label text-muted small">Datum (Definiert die Saison)</label>
+                        <input type="date" class="form-control" @bind="EditingTournament.Date" />
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button>
+                    <button class="btn btn-primary" @onclick="SaveTournament"><i class="bi bi-save me-1"></i>
+                        Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (IsDeleteModalOpen && TournamentToDelete != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Turnier löschen</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Möchtest du das Turnier <strong>"@TournamentToDelete.Name"</strong> unwiderruflich löschen?</p>
+                    <p class="text-danger small">Achtung: Dies entfernt die Punkte für dieses Turnier bei allen
+                        @TournamentToDelete.PlayerTournaments.Count Teilnehmern!</p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button>
+                    <button class="btn btn-danger" @onclick="DeleteTournament">Ja, komplett löschen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Tournament>? AllTournaments;
+    private List<Player>? AllPlayers;
+
+    private bool IsEditModalOpen = false;
+    private bool IsDeleteModalOpen = false;
+    private bool IsResultManagerOpen = false;
+
+    private Tournament? SelectedTournament;
+    private Tournament? EditingTournament;
+    private Tournament? TournamentToDelete;
+
+    // Für das Hinzufügen neuer Spieler im ResultManager
+    private int NewPlayerId = 0;
+    private int NewPlayerRank = 1;
+    private double NewPlayerPoints = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTournaments();
+        // Wir laden die Spieler einmal für die Dropdown-Liste
+        using var db = await DbFactory.CreateDbContextAsync();
+        AllPlayers = await db.Players.Include(p => p.Club).ToListAsync();
+    }
+
+    private async Task LoadTournaments()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        AllTournaments = await db.Tournaments
+        .Include(t => t.PlayerTournaments)
+        .ThenInclude(pt => pt.Player)
+        .ThenInclude(p => p!.Club)
+        .ToListAsync();
+    }
+
+    private string GetSeasonString(DateTime date) => date.Month >= 9 ? $"{date.Year}/{date.Year + 1}" : $"{date.Year -
+    1}/{date.Year}";
+
+    // --- MODAL CONTROLLERS ---
+
+    private void OpenResultManager(Tournament t)
+    {
+        SelectedTournament = t;
+        IsResultManagerOpen = true;
+        NewPlayerId = 0; NewPlayerRank = 1; NewPlayerPoints = 0;
+    }
+
+    private void OpenEditModal(Tournament t)
+    {
+        EditingTournament = new Tournament
+        {
+            TournamentId = t.TournamentId,
+            Name =
+    t.Name,
+            Date = t.Date
+        }; IsEditModalOpen = true;
+    }
+    private void OpenDeleteModal(Tournament t) { TournamentToDelete = t; IsDeleteModalOpen = true; }
+    private void CloseModals()
+    {
+        IsEditModalOpen = false; IsDeleteModalOpen = false; IsResultManagerOpen = false;
+        EditingTournament = null; TournamentToDelete = null; SelectedTournament = null;
+    }
+
+    // --- RESULT MANAGEMENT (Speichert on Blur automatisch) ---
+
+    private async Task SaveResult(PlayerTournament pt)
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        db.PlayerTournaments.Update(pt);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task RemovePlayerFromTournament(PlayerTournament pt)
+    {
+        if (SelectedTournament == null) return;
+        using var db = await DbFactory.CreateDbContextAsync();
+        db.PlayerTournaments.Remove(pt);
+        await db.SaveChangesAsync();
+        SelectedTournament.PlayerTournaments.Remove(pt);
+        StateHasChanged();
+    }
+
+    private async Task AddPlayerToTournament()
+    {
+        if (SelectedTournament == null || NewPlayerId == 0) return;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        var newPt = new PlayerTournament
+        {
+            TournamentId = SelectedTournament.TournamentId,
+            PlayerId = NewPlayerId,
+            Rank = NewPlayerRank,
+            Points = NewPlayerPoints
+        };
+
+        db.PlayerTournaments.Add(newPt);
+        await db.SaveChangesAsync();
+
+        // Lade neu, damit die Relationen (Name, Verein) da sind
+        await LoadTournaments();
+        SelectedTournament = AllTournaments!.First(t => t.TournamentId == SelectedTournament.TournamentId);
+
+        // Reset Inputs
+        NewPlayerId = 0;
+        NewPlayerRank++;
+        NewPlayerPoints = Math.Max(0, NewPlayerPoints - 1);
+        StateHasChanged();
+    }
+
+    // --- TOURNAMENT MANAGEMENT ---
+
+    private async Task SaveTournament()
+    {
+        if (EditingTournament == null || string.IsNullOrWhiteSpace(EditingTournament.Name)) return;
+        using var db = await DbFactory.CreateDbContextAsync();
+        var dbT = await db.Tournaments.FindAsync(EditingTournament.TournamentId);
+        if (dbT != null)
+        {
+            dbT.Name = EditingTournament.Name;
+            dbT.Date = EditingTournament.Date;
+            db.Tournaments.Update(dbT);
+            await db.SaveChangesAsync();
+        }
+        await LoadTournaments();
+        CloseModals();
+    }
+
+    private async Task DeleteTournament()
+    {
+        if (TournamentToDelete == null) return;
+        using var db = await DbFactory.CreateDbContextAsync();
+        var dbT = await db.Tournaments.FindAsync(TournamentToDelete.TournamentId);
+        if (dbT != null)
+        {
+            db.Tournaments.Remove(dbT);
+            await db.SaveChangesAsync();
+        }
+        await LoadTournaments();
+        CloseModals();
+    }
+}
