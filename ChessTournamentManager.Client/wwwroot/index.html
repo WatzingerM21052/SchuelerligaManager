@@ -74,33 +74,37 @@
             }
         };
 
-        // --- BROWSER SPEICHER GEFIXT (Mit Console Logs) ---
+        // --- BROWSER SPEICHER GEFIXT (INCLUSIVE DELETE) ---
         window.browserStorage = {
             dbName: "ChessTournamentDB", storeName: "databaseFiles",
             init: () => new Promise((resolve, reject) => {
                 const req = indexedDB.open(window.browserStorage.dbName, 1);
                 req.onupgradeneeded = e => e.target.result.createObjectStore(window.browserStorage.storeName);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => { console.error("IndexedDB Fehler:", req.error); reject(); };
+                req.onsuccess = () => resolve(req.result); req.onerror = () => reject();
             }),
             saveDb: async (base64Data) => {
-                console.log("Speichere DB im Browser...");
                 const db = await window.browserStorage.init();
                 return new Promise(r => {
                     const tx = db.transaction(window.browserStorage.storeName, "readwrite");
                     tx.objectStore(window.browserStorage.storeName).put(base64Data, "chess.db");
-                    tx.oncomplete = () => { console.log("DB erfolgreich gespeichert."); r(true); };
-                    tx.onerror = () => { console.error("Speicherfehler."); r(false); };
+                    tx.oncomplete = () => r(true);
                 });
             },
             loadDb: async () => {
-                console.log("Lade DB aus Browser...");
                 const db = await window.browserStorage.init();
                 return new Promise(r => {
                     const tx = db.transaction(window.browserStorage.storeName, "readonly");
                     const req = tx.objectStore(window.browserStorage.storeName).get("chess.db");
-                    req.onsuccess = () => { console.log("DB geladen!"); r(req.result); };
-                    req.onerror = () => { console.error("Ladefehler."); r(null); };
+                    req.onsuccess = () => r(req.result); req.onerror = () => r(null);
+                });
+            },
+            // NEU: Löschen der Datenbank aus dem Browser-Speicher
+            deleteDb: async () => {
+                const db = await window.browserStorage.init();
+                return new Promise(r => {
+                    const tx = db.transaction(window.browserStorage.storeName, "readwrite");
+                    tx.objectStore(window.browserStorage.storeName).delete("chess.db");
+                    tx.oncomplete = () => r(true);
                 });
             }
         };

@@ -14,7 +14,8 @@
 <div class="container-fluid px-4 py-3 min-vh-100 bg-light">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
-            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-cloud-arrow-up text-primary me-2"></i>System & Import</h2>
+            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-cloud-arrow-up text-primary me-2"></i>System & Import
+            </h2>
             <span class="text-muted small">Datenbank-Management und Multi-Excel-Dateneinspielung</span>
         </div>
     </div>
@@ -33,29 +34,38 @@
     }
 
     <div class="row g-4">
-        <div class="col-md-5">
+        <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                    <h5 class="fw-bold text-dark"><i class="bi bi-database me-2 text-secondary"></i>1. Datenbank Management</h5>
+                    <h5 class="fw-bold text-dark"><i class="bi bi-database me-2 text-secondary"></i>1. Datenbank
+                        Management</h5>
                 </div>
                 <div class="card-body">
-                    
+
                     <div class="bg-light p-3 rounded-3 mb-4 border">
-                        <span class="fw-bold text-dark d-block mb-2"><i class="bi bi-browser-chrome me-1"></i> Lokaler Browser-Speicher</span>
+                        <span class="fw-bold text-dark d-block mb-2"><i class="bi bi-browser-chrome me-1"></i> Lokaler
+                            Browser-Speicher</span>
                         <p class="text-muted small mb-3">
                             @(IsAutoLoading ? "Prüfe automatischen Start-Cache..." : "Sichert die Daten permanent im Browser-Cache.")
                         </p>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-primary w-50 shadow-sm" @onclick="SaveToBrowserCache" disabled="@IsAutoLoading">
-                                <i class="bi bi-save me-1"></i> Im Browser speichern
+                            <button class="btn btn-primary shadow-sm flex-grow-1" @onclick="SaveToBrowserCache"
+                                disabled="@IsAutoLoading" title="Speichern">
+                                <i class="bi bi-save me-1"></i> Speichern
                             </button>
-                            <button class="btn btn-outline-secondary w-50 shadow-sm" @onclick="() => LoadFromBrowserCache(false)" disabled="@IsAutoLoading">
-                                <i class="bi bi-cloud-download me-1"></i> Aus Browser laden
+                            <button class="btn btn-outline-secondary shadow-sm flex-grow-1"
+                                @onclick="() => LoadFromBrowserCache(false)" disabled="@IsAutoLoading" title="Laden">
+                                <i class="bi bi-cloud-download me-1"></i> Laden
+                            </button>
+                            <button class="btn btn-outline-danger shadow-sm" @onclick="DeleteBrowserCache"
+                                disabled="@IsAutoLoading" title="Browser-Cache leeren">
+                                <i class="bi bi-trash"></i>
                             </button>
                         </div>
                     </div>
 
-                    <span class="fw-bold text-dark d-block mb-2 mt-4"><i class="bi bi-pc-display me-1"></i> Manuelles PC-Backup (.db)</span>
+                    <span class="fw-bold text-dark d-block mb-2 mt-4"><i class="bi bi-pc-display me-1"></i> Manuelles
+                        PC-Backup (.db)</span>
                     <InputFile OnChange="@LoadDbFromFile" accept=".db" class="form-control mb-3" />
                     <button class="btn btn-outline-dark w-100" @onclick="SaveDbToFile">
                         <i class="bi bi-download me-1"></i> Backup auf PC herunterladen
@@ -64,58 +74,84 @@
             </div>
         </div>
 
-        <div class="col-md-7">
+        <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                    <h5 class="fw-bold text-dark"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>2. Batch Turnier-Import</h5>
+                    <h5 class="fw-bold text-dark"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>2.
+                        Turnier Batch-Import</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small mb-3">Wählen Sie <b>beliebig viele</b> Auswertungs-Dateien (.xlsx) gleichzeitig aus. Das System verarbeitet sie in der gewählten Reihenfolge.</p>
-                    
-                    <InputFile OnChange="@ImportMultipleExcel" accept=".xlsx" multiple class="form-control form-control-lg bg-light border-primary" />
-                    
+                    <p class="text-muted small mb-3">Zieht <b>bis zu 200</b> Turnier-Dateien (.xlsx) ein und erzeugt
+                        Matrix-Ergebnisse.</p>
+                    <InputFile OnChange="@ImportMultipleExcel" accept=".xlsx" multiple
+                        class="form-control form-control-lg bg-light border-primary" />
+
                     @if (PendingImports.Any())
                     {
-                        <div class="bg-white border rounded-3 p-4 mt-4 shadow-sm">
-                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                <span class="fw-bold text-dark">Bereit für den Batch-Import:</span>
-                                <span class="badge bg-primary fs-6">@PendingImports.Count Turniere</span>
+                        <div class="bg-white border rounded-3 p-3 mt-4 shadow-sm">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-primary fs-6 me-2">@PendingImports.Count Turniere</span> bereit.
                             </div>
 
-                            <div class="mb-4 bg-light p-3 rounded border">
-                                <label class="form-label text-muted small fw-bold text-uppercase">Zuweisung für alle Turniere:</label>
-                                <div class="d-flex align-items-center gap-3">
-                                    <i class="bi bi-calendar3 fs-4 text-primary"></i>
-                                    <select class="form-select border-primary fw-bold" @bind="SelectedImportSeason">
-                                        @foreach (var season in ImportSeasons) { <option value="@season">Saison @season</option> }
-                                    </select>
-                                </div>
+                            <div class="mb-3 bg-light p-2 rounded border">
+                                <label class="form-label text-muted small fw-bold">Saison für alle:</label>
+                                <select class="form-select border-primary fw-bold" @bind="SelectedImportSeason">
+                                    @foreach (var season in ImportSeasons)
+                                    {
+                                        <option value="@season">Saison @season</option>
+                                    }
+                                </select>
                             </div>
 
-                            <div class="list-group mb-4" style="max-height: 300px; overflow-y: auto;">
+                            <div class="list-group mb-3" style="max-height: 150px; overflow-y: auto;">
                                 @foreach (var import in PendingImports)
                                 {
-                                    <div class="list-group-item bg-white p-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span class="text-muted small"><i class="bi bi-file-earmark-excel text-success me-1"></i> @import.FileName</span>
-                                            <span class="badge bg-secondary">@import.Players.Count Spieler</span>
-                                        </div>
-                                        <input @bind="import.TournamentName" class="form-control fw-bold text-dark" placeholder="Name des Turniers" />
+                                    <div class="list-group-item p-2">
+                                        <input @bind="import.TournamentName"
+                                            class="form-control fw-bold text-dark form-control-sm" placeholder="Turniername" />
                                     </div>
                                 }
                             </div>
 
-                            <button class="btn btn-success w-100 fw-bold shadow-sm py-3 fs-5" @onclick="SaveAllToDatabase" disabled="@IsProcessing">
+                            <button class="btn btn-success w-100 fw-bold shadow-sm" @onclick="SaveAllToDatabase"
+                                disabled="@IsProcessing">
                                 @if (IsProcessing)
                                 {
-                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    <span>Verarbeite @PendingImports.Count Turniere...</span>
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                    <span>Verarbeite...</span>
                                 }
                                 else
                                 {
-                                    <i class="bi bi-rocket-takeoff-fill me-2"></i> <span>Alle @PendingImports.Count Turniere ins System schreiben</span>
+                                    <i class="bi bi-rocket-takeoff-fill me-1"></i>
+                                    <span>Turniere ins System
+                                        schreiben</span>
                                 }
                             </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="fw-bold text-dark"><i class="bi bi-people-fill me-2 text-info"></i>3. Stammdaten-Import
+                        (Batch)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Liest <b>bis zu 200</b> Excel-Dateien ein und fügt
+                        <b>ausschließlich neue Spieler & Vereine</b> hinzu (keine Turniere).
+                    </p>
+
+                    <InputFile OnChange="@ImportMultiplePlayersOnly" accept=".xlsx" multiple
+                        class="form-control form-control-lg bg-light border-info" />
+
+                    @if (IsProcessingPlayers)
+                    {
+                        <div class="d-flex align-items-center mt-3 text-info fw-bold">
+                            <span class="spinner-border spinner-border-sm me-2"></span> Analysiere Dateien und verarbeite
+                            Spieler...
                         </div>
                     }
                 </div>
@@ -125,7 +161,6 @@
 </div>
 
 @code {
-    // --- NEUE BATCH IMPORT DATENSTRUKTUR ---
     private class PendingImport
     {
         public string FileName { get; set; } = "";
@@ -135,27 +170,35 @@
 
     private List<PendingImport> PendingImports = new();
     private bool IsProcessing = false;
+    private bool IsProcessingPlayers = false;
 
     private string SuccessMessage = "";
-    private string ErrorMessage = ""; 
+    private string ErrorMessage = "";
     private bool IsAutoLoading = false;
 
     private List<string> ImportSeasons = new();
     private string SelectedImportSeason = "";
 
+    // ----------------------------------------------------
+    // HOHE LIMITS FÜR DEN ENTERPRISE-IMPORT
+    // ----------------------------------------------------
+    private const int MAX_FILE_COUNT = 200; // Maximale Anzahl an Dateien gleichzeitig
+    private const long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB pro Datei
+                                                         // ----------------------------------------------------
+
     protected override async Task OnInitializedAsync()
     {
         int currentYear = DateTime.Now.Year;
-        int startYear = Math.Min(2023, currentYear - 3); 
+        int startYear = Math.Min(2023, currentYear - 3);
         for (int y = startYear; y <= currentYear + 1; y++) ImportSeasons.Add($"{y}/{y + 1}");
         int currentSeasonStart = DateTime.Now.Month >= 9 ? currentYear : currentYear - 1;
         SelectedImportSeason = $"{currentSeasonStart}/{currentSeasonStart + 1}";
 
         using var db = await DbFactory.CreateDbContextAsync();
-        await db.Database.EnsureCreatedAsync(); 
+        await db.Database.EnsureCreatedAsync();
 
-        bool isDbEmpty = !await db.Tournaments.AnyAsync();
-        
+        bool isDbEmpty = !await db.Tournaments.AnyAsync() && !await db.Players.AnyAsync();
+
         if (isDbEmpty)
         {
             IsAutoLoading = true;
@@ -164,77 +207,113 @@
         }
     }
 
-    // --- BROWSER / DATEI BACKUP CODE (UNVERÄNDERT, WEIL ER FUNKTIONIERT) ---
+    // --- 1. BROWSER / DATEI BACKUP ---
 
-    private async Task SaveToBrowserCache() { try { ErrorMessage = ""; SuccessMessage = ""; var base64Db = await DbManager.GetDatabaseAsBase64Async(); if (string.IsNullOrEmpty(base64Db)) { ErrorMessage = "Datenbank ist leer."; return; } await JS.InvokeVoidAsync("window.browserStorage.saveDb", base64Db); SuccessMessage = "Datenbank erfolgreich im Browser-Cache gesichert!"; } catch (Exception ex) { ErrorMessage = "Speichern fehlgeschlagen: " + ex.Message; } }
-    private async Task LoadFromBrowserCache(bool silent) { try { if (!silent) { ErrorMessage = ""; SuccessMessage = ""; } var base64Db = await JS.InvokeAsync<string>("window.browserStorage.loadDb"); if (string.IsNullOrEmpty(base64Db)) { if (!silent) ErrorMessage = "Kein Backup im Cache gefunden."; return; } using var memoryStream = new MemoryStream(Convert.FromBase64String(base64Db)); await DbManager.ImportDatabase(memoryStream); if (!silent) SuccessMessage = "Datenbank sofort live aus dem Browser-Cache geladen!"; else SuccessMessage = "Daten beim Start automatisch aus dem Cache wiederhergestellt."; StateHasChanged(); } catch (Exception ex) { if (!silent) ErrorMessage = "Laden fehlgeschlagen: " + ex.Message; } }
-    private async Task LoadDbFromFile(InputFileChangeEventArgs e) { try { ErrorMessage = ""; SuccessMessage = ""; using var stream = e.File.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024); await DbManager.ImportDatabase(stream); SuccessMessage = "Datenbank live aus Datei geladen!"; StateHasChanged(); } catch (Exception ex) { ErrorMessage = "Datei-Import fehlgeschlagen: " + ex.Message; } }
+    private async Task SaveToBrowserCache()
+    {
+        try
+        {
+            ErrorMessage = ""; SuccessMessage = ""; var base64Db = await
+            DbManager.GetDatabaseAsBase64Async(); if (string.IsNullOrEmpty(base64Db))
+            {
+                ErrorMessage = "Datenbank ist leer.";
+                return;
+            }
+            await JS.InvokeVoidAsync("window.browserStorage.saveDb", base64Db); SuccessMessage = "Datenbank erfolgreich im Browser-Cache gesichert!";
+        }
+        catch (Exception ex) { ErrorMessage = "Speichern fehlgeschlagen: " + ex.Message; }
+    }
+    private async Task LoadFromBrowserCache(bool silent)
+    {
+        try
+        {
+            if (!silent) { ErrorMessage = ""; SuccessMessage = ""; }
+            var base64Db = await JS.InvokeAsync<string>("window.browserStorage.loadDb"); if (string.IsNullOrEmpty(base64Db))
+            {
+                if
+                (!silent) ErrorMessage = "Kein Backup im Cache gefunden."; return;
+            }
+            using var memoryStream = new
+            MemoryStream(Convert.FromBase64String(base64Db)); await DbManager.ImportDatabase(memoryStream); if (!silent)
+                SuccessMessage = "Datenbank sofort live aus dem Browser-Cache geladen!";
+            else SuccessMessage = "Daten beim Start automatisch aus dem Cache wiederhergestellt."; StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            if (!silent) ErrorMessage =
+            "Laden fehlgeschlagen: " + ex.Message;
+        }
+    }
+    private async Task DeleteBrowserCache()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("window.browserStorage.deleteDb");
+            SuccessMessage = "Der Browser-Cache wurde erfolgreich gelöscht."; StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Löschen fehlgeschlagen: " + ex.Message;
+        }
+    }
+    private async Task LoadDbFromFile(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            ErrorMessage = ""; SuccessMessage = ""; using var
+            stream = e.File.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); await DbManager.ImportDatabase(stream); SuccessMessage =
+            "Datenbank live aus Datei geladen!"; StateHasChanged();
+        }
+        catch (Exception ex) { ErrorMessage = "Datei-Import fehlgeschlagen: " + ex.Message; }
+    }
     private async Task SaveDbToFile() => await DbManager.DownloadDatabase();
 
 
-    // --- NEUER BATCH EXCEL IMPORT ---
+    // --- 2. BATCH TURNIER IMPORT ---
 
     private async Task ImportMultipleExcel(InputFileChangeEventArgs e)
     {
         ErrorMessage = ""; SuccessMessage = "";
         PendingImports.Clear();
 
-        // Verarbeite bis zu 20 Dateien gleichzeitig
-        foreach (var file in e.GetMultipleFiles( maximumFileCount: 20))
+        // ERHÖHTES LIMIT ÜBERGEBEN
+        foreach (var file in e.GetMultipleFiles(maximumFileCount: MAX_FILE_COUNT))
         {
-            try 
+            try
             {
-                using var stream = file.OpenReadStream(maxAllowedSize: 15 * 1024 * 1024);
+                using var stream = file.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE);
                 var memoryStream = new MemoryStream();
                 await stream.CopyToAsync(memoryStream);
                 memoryStream.Position = 0;
 
                 var players = ExcelService.ReadExcelStream(memoryStream);
-                
-                if (players != null && players.Any())
+                if (players != null && players.Any()) PendingImports.Add(new PendingImport
                 {
-                    PendingImports.Add(new PendingImport 
-                    { 
-                        FileName = file.Name,
-                        // Nutzt den Dateinamen ohne ".xlsx" als ersten Vorschlag für den Turniernamen
-                        TournamentName = Path.GetFileNameWithoutExtension(file.Name),
-                        Players = players
-                    });
-                }
+                    FileName = file.Name,
+                    TournamentName =
+                Path.GetFileNameWithoutExtension(file.Name),
+                    Players = players
+                });
             }
-            catch (Exception ex)
-            {
-                ErrorMessage += $"Fehler bei Datei {file.Name}: {ex.Message} ";
-            }
+            catch (Exception ex) { ErrorMessage += $"Fehler bei Datei {file.Name}: {ex.Message} "; }
         }
     }
 
     private async Task SaveAllToDatabase()
     {
         if (!PendingImports.Any() || string.IsNullOrWhiteSpace(SelectedImportSeason)) return;
-
-        IsProcessing = true;
-        StateHasChanged();
-
-        using var db = await DbFactory.CreateDbContextAsync();
-        await db.Database.EnsureCreatedAsync();
+        IsProcessing = true; StateHasChanged();
+        using var db = await DbFactory.CreateDbContextAsync(); await db.Database.EnsureCreatedAsync();
 
         int seasonStartYear = int.Parse(SelectedImportSeason.Split('/')[0]);
-
-        // Für jedes Turnier ein eigener Tag, damit die Reihenfolge (Datum) in der DB erhalten bleibt
         int dayOffset = 1;
 
         foreach (var import in PendingImports)
         {
-            // Setzt das Datum auf den 1. Okt, 2. Okt, 3. Okt... je nach Reihenfolge der Dateien
-            DateTime tournamentDate = new DateTime(seasonStartYear, 10, 1).AddDays(dayOffset - 1);
-            dayOffset++;
-
+            DateTime tournamentDate = new DateTime(seasonStartYear, 10, 1).AddDays(dayOffset - 1); dayOffset++;
             var tournament = new Tournament { Name = import.TournamentName, Date = tournamentDate };
-            db.Tournaments.Add(tournament);
-            await db.SaveChangesAsync(); // Muss hier gespeichert werden, um die ID für die Ergebnisse zu bekommen
+            db.Tournaments.Add(tournament); await db.SaveChangesAsync();
 
-            // Cache für die Vereine, um schnelle Lookups zu machen
             var existingClubs = await db.Clubs.ToListAsync();
             var existingPlayers = await db.Players.ToListAsync();
 
@@ -244,44 +323,125 @@
                 if (p.Club != null && !string.IsNullOrWhiteSpace(p.Club.Name))
                 {
                     dbClub = existingClubs.FirstOrDefault(c => c.Name.ToLower() == p.Club.Name.ToLower());
-                    if (dbClub == null) 
-                    { 
-                        dbClub = new Club { Name = p.Club.Name }; 
-                        db.Clubs.Add(dbClub); 
-                        await db.SaveChangesAsync(); 
-                        existingClubs.Add(dbClub); // In lokalen Cache aufnehmen
+                    if (dbClub == null)
+                    {
+                        dbClub = new Club { Name = p.Club.Name }; db.Clubs.Add(dbClub); await db.SaveChangesAsync();
+                        existingClubs.Add(dbClub);
                     }
                 }
 
-                var dbPlayer = existingPlayers.FirstOrDefault(dbP => dbP.Firstname.ToLower() == p.Firstname.ToLower() && dbP.Lastname.ToLower() == p.Lastname.ToLower());
-                
-                if (dbPlayer == null) 
-                { 
-                    p.Club = null; 
-                    p.ClubId = dbClub?.ClubId; 
-                    db.Players.Add(p); 
-                    await db.SaveChangesAsync(); 
-                    dbPlayer = p; 
-                    existingPlayers.Add(dbPlayer); // In lokalen Cache aufnehmen
+                var dbPlayer = existingPlayers.FirstOrDefault(dbP => dbP.Firstname.ToLower() == p.Firstname.ToLower() &&
+                dbP.Lastname.ToLower() == p.Lastname.ToLower());
+                if (dbPlayer == null)
+                {
+                    p.Club = null; p.ClubId = dbClub?.ClubId; db.Players.Add(p); await db.SaveChangesAsync();
+                    dbPlayer = p; existingPlayers.Add(dbPlayer);
                 }
-                else 
-                { 
-                    bool changed = false;
-                    if (p.Elo.HasValue && dbPlayer.Elo != p.Elo) { dbPlayer.Elo = p.Elo; changed = true; }
-                    if (dbPlayer.ClubId == null && dbClub != null) { dbPlayer.ClubId = dbClub.ClubId; changed = true; }
-                    if (changed) { db.Players.Update(dbPlayer); await db.SaveChangesAsync(); }
+                else
+                {
+                    bool changed = false; if (p.Elo.HasValue && dbPlayer.Elo != p.Elo) { dbPlayer.Elo = p.Elo; changed = true; }
+                    if
+                    (dbPlayer.ClubId == null && dbClub != null) { dbPlayer.ClubId = dbClub.ClubId; changed = true; }
+                    if (changed)
+                    {
+                        db.Players.Update(dbPlayer); await db.SaveChangesAsync();
+                    }
                 }
 
                 double calculatedPoints = Math.Max(10, 21 - p.TournamentRank);
-                db.PlayerTournaments.Add(new PlayerTournament { TournamentId = tournament.TournamentId, PlayerId = dbPlayer.PlayerId, Points = calculatedPoints, Rank = p.TournamentRank });
+                db.PlayerTournaments.Add(new PlayerTournament
+                {
+                    TournamentId = tournament.TournamentId,
+                    PlayerId = dbPlayer.PlayerId,
+                    Points = calculatedPoints,
+                    Rank = p.TournamentRank
+                });
             }
-
             await db.SaveChangesAsync();
         }
 
-        int count = PendingImports.Count;
-        PendingImports.Clear();
-        IsProcessing = false;
-        SuccessMessage = $"{count} Turniere wurden erfolgreich und intelligent verknüpft in die Saison {SelectedImportSeason} importiert!";
+        int count = PendingImports.Count; PendingImports.Clear(); IsProcessing = false;
+        SuccessMessage = $"{count} Turniere wurden erfolgreich in die Saison {SelectedImportSeason} importiert!";
+    }
+
+    // --- 3. MULTI STAMMDATEN IMPORT ---
+
+    private async Task ImportMultiplePlayersOnly(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            ErrorMessage = ""; SuccessMessage = ""; IsProcessingPlayers = true; StateHasChanged();
+
+            var allExcelPlayers = new List<Player>();
+
+            // HIER WAR DER FEHLER: Wir übergeben das Limit MAX_FILE_COUNT explizit!
+            foreach (var file in e.GetMultipleFiles(maximumFileCount: MAX_FILE_COUNT))
+            {
+                try
+                {
+                    using var stream = file.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE);
+                    var memoryStream = new MemoryStream();
+                    await stream.CopyToAsync(memoryStream);
+                    memoryStream.Position = 0;
+
+                    var filePlayers = ExcelService.ReadExcelStream(memoryStream);
+                    if (filePlayers != null) allExcelPlayers.AddRange(filePlayers);
+                }
+                catch (Exception ex) { ErrorMessage += $"Fehler bei Datei {file.Name}: {ex.Message} "; }
+            }
+
+            if (!allExcelPlayers.Any())
+            {
+                ErrorMessage += "Keine Spieler in den Dateien gefunden."; IsProcessingPlayers = false;
+                return;
+            }
+
+            using var db = await DbFactory.CreateDbContextAsync();
+            await db.Database.EnsureCreatedAsync();
+
+            var existingClubs = await db.Clubs.ToListAsync();
+            var existingPlayers = await db.Players.ToListAsync();
+
+            int newPlayersCount = 0;
+            int updatedPlayersCount = 0;
+
+            foreach (var p in allExcelPlayers)
+            {
+                Club? dbClub = null;
+                if (p.Club != null && !string.IsNullOrWhiteSpace(p.Club.Name))
+                {
+                    dbClub = existingClubs.FirstOrDefault(c => c.Name.ToLower() == p.Club.Name.ToLower());
+                    if (dbClub == null)
+                    {
+                        dbClub = new Club { Name = p.Club.Name }; db.Clubs.Add(dbClub); await db.SaveChangesAsync();
+                        existingClubs.Add(dbClub);
+                    }
+                }
+
+                var dbPlayer = existingPlayers.FirstOrDefault(dbP => dbP.Firstname.ToLower() == p.Firstname.ToLower() &&
+                dbP.Lastname.ToLower() == p.Lastname.ToLower());
+
+                if (dbPlayer == null)
+                {
+                    p.Club = null; p.ClubId = dbClub?.ClubId;
+                    db.Players.Add(p);
+                    await db.SaveChangesAsync();
+                    existingPlayers.Add(p);
+                    newPlayersCount++;
+                }
+                else
+                {
+                    bool changed = false;
+                    if (p.Elo.HasValue && dbPlayer.Elo != p.Elo) { dbPlayer.Elo = p.Elo; changed = true; }
+                    if (dbPlayer.ClubId == null && dbClub != null) { dbPlayer.ClubId = dbClub.ClubId; changed = true; }
+                    if (changed) { db.Players.Update(dbPlayer); await db.SaveChangesAsync(); updatedPlayersCount++; }
+                }
+            }
+
+            // HIER IST DER FIX FÜR DIE ERFOLGSMELDUNG: Wir nutzen e.FileCount statt GetMultipleFiles().Count
+            SuccessMessage = $"Stammdaten-Update erfolgreich (aus {e.FileCount} Dateien): {newPlayersCount} neue Spieler angelegt, {updatedPlayersCount} Spielerdaten aktualisiert.";
+        }
+        catch (Exception ex) { ErrorMessage = "Fehler beim Spieler-Import: " + ex.Message; }
+        finally { IsProcessingPlayers = false; StateHasChanged(); }
     }
 }

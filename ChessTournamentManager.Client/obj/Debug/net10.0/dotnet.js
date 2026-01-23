@@ -5,7 +5,7 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
   "mainAssemblyName": "ChessTournamentManager.Client",
   "applicationEnvironment": "Development",
   "resources": {
-    "hash": "sha256-jpBf32BxGxCyyZ8pnnGlF26iksPpIi8sThT/83FZeKg=",
+    "hash": "sha256-lyRRb9QRoOdj8TJbUo87IBgy2N4KbFet2rwHc5JnCaU=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.q1f8adzkja.js"
@@ -18,8 +18,8 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
     ],
     "wasmNative": [
       {
-        "name": "dotnet.native.iozlw6rk44.wasm",
-        "integrity": "sha256-4k/LgOnV4U5b/wY0dZMRHCt9yCoU+SiiznskzwQwcvk=",
+        "name": "dotnet.native.qtoi6zdelm.wasm",
+        "integrity": "sha256-LtDjFhqLYUA9QcUniOMEG1UX6psjF/qapMBc6QW5ycU=",
         "cache": "force-cache"
       }
     ],
@@ -1314,28 +1314,28 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
       },
       {
         "virtualPath": "ChessTournamentManager.Shared.wasm",
-        "name": "ChessTournamentManager.Shared.m8w4bemufl.wasm",
-        "integrity": "sha256-Nj+MQX8gQrBhSKrWKpTZF8UgWMcTcWTYBP+E2uXPM9I=",
+        "name": "ChessTournamentManager.Shared.omtxd0561z.wasm",
+        "integrity": "sha256-wO7MJRSI98PZvewperOL+Qlz/Nz0o9WQVG3NE9oD15E=",
         "cache": "force-cache"
       },
       {
         "virtualPath": "ChessTournamentManager.Client.wasm",
-        "name": "ChessTournamentManager.Client.kcrrl5ebi6.wasm",
-        "integrity": "sha256-zDOzjM8WhBGy40V8kDoNW/slUr6PtPnp7Obi2G6Hf/8=",
+        "name": "ChessTournamentManager.Client.utlb5ov98q.wasm",
+        "integrity": "sha256-vgcl1t58KWmEYnm0bmp3UyaVsUm+kXvXQfuANIzdXsc=",
         "cache": "force-cache"
       }
     ],
     "pdb": [
       {
         "virtualPath": "ChessTournamentManager.Shared.pdb",
-        "name": "ChessTournamentManager.Shared.xvzvds4l2i.pdb",
-        "integrity": "sha256-k5vAhBBbIDaRfvosIuoHhqOA+14sT6NNFYm2uv+X+OQ=",
+        "name": "ChessTournamentManager.Shared.ap21awhpnw.pdb",
+        "integrity": "sha256-7t2gBxwRTeRyu+hxNLKideNDIAL3asKliiC6Ok7steg=",
         "cache": "force-cache"
       },
       {
         "virtualPath": "ChessTournamentManager.Client.pdb",
-        "name": "ChessTournamentManager.Client.vrggb5aib8.pdb",
-        "integrity": "sha256-FQhDV5ZIGNL2SN8fVBSgfOHjJMRaaIR6+sdSWYSG3C4=",
+        "name": "ChessTournamentManager.Client.35fh6jpdal.pdb",
+        "integrity": "sha256-5yhg8ePrfORylKsglyQUB/+36cH6ju1ZuWPNgAZdIx8=",
         "cache": "force-cache"
       }
     ],
