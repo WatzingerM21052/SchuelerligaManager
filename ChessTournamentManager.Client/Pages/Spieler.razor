@@ -13,16 +13,12 @@
             <h2 class="fw-bold text-dark mb-0"><i class="bi bi-people text-primary me-2"></i>Spieler-Stammdaten</h2>
             <span class="text-muted small">Verwaltung und historische Leistungsdaten der Spieler</span>
         </div>
-        <button class="btn btn-primary shadow-sm" @onclick="OpenAddModal">
-            <i class="bi bi-plus-lg me-1"></i> Neuer Spieler
-        </button>
+        <button class="btn btn-primary shadow-sm" @onclick="OpenAddModal"><i class="bi bi-plus-lg me-1"></i> Neuer Spieler</button>
     </div>
 
-    @if (AllPlayers == null || AllClubs == null)
+    @if (AllPlayers == null)
     {
-        <div class="d-flex justify-content-center mt-5">
-            <div class="spinner-border text-primary"></div>
-        </div>
+        <div class="d-flex justify-content-center mt-5"><div class="spinner-border text-primary"></div></div>
     }
     else
     {
@@ -43,31 +39,17 @@
                         @foreach (var player in AllPlayers.OrderBy(p => p.Lastname).ThenBy(p => p.Firstname))
                         {
                             <tr>
-                                <td class="ps-4 fw-bold text-dark">@player.Lastname <span
-                                        class="fw-normal text-muted">@player.Firstname</span></td>
+                                <td class="ps-4 fw-bold text-dark">@player.Lastname <span class="fw-normal text-muted">@player.Firstname</span></td>
                                 <td class="text-muted">@player.Club?.Name</td>
                                 <td>@player.Elo</td>
-                                <td class="text-center"><span class="badge bg-light text-dark border">@player.AgeGroup</span>
-                                </td>
+                                <td class="text-center"><span class="badge bg-light text-dark border">@player.AgeGroup</span></td>
                                 <td class="text-center">
-                                    @if (player.PlayerTournaments != null && player.PlayerTournaments.Any())
-                                    {
-                                        <button class="btn btn-sm btn-outline-primary"
-                                            @onclick="() => OpenTournamentListModal(player)">
-                                            <i class="bi bi-bar-chart-fill me-1"></i> @player.PlayerTournaments.Count
-                                        </button>
-                                    }
-                                    else
-                                    {
-
-                                        <span class="text-muted">-</span>
-                                    }
+                                    @if (player.PlayerTournaments != null && player.PlayerTournaments.Any()) { <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenTournamentListModal(player)"><i class="bi bi-bar-chart-fill me-1"></i> @player.PlayerTournaments.Count </button> }
+                                    else { <span class="text-muted">-</span> }
                                 </td>
                                 <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-light border me-1" @onclick="() => OpenEditModal(player)"><i
-                                            class="bi bi-pencil"></i></button>
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => OpenDeleteModal(player)"><i
-                                            class="bi bi-trash"></i></button>
+                                    <button class="btn btn-sm btn-light border me-1" @onclick="() => OpenEditModal(player)"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => OpenDeleteModal(player)"><i class="bi bi-trash"></i></button>
                                 </td>
                             </tr>
                         }
@@ -80,50 +62,30 @@
 
 @if (IsTournamentListModalOpen && SelectedPlayer != null)
 {
-    var tournaments = SelectedPlayer.PlayerTournaments.OrderBy(pt => pt.Tournament?.Date).ToList();
-
+    var tournaments = SelectedPlayer.PlayerTournaments.OrderBy(pt => pt.Tournament?.Date).ToList(); 
     <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-white border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold text-dark">Leistungsdaten: @SelectedPlayer.Firstname
-                        @SelectedPlayer.Lastname</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
-                </div>
+                <div class="modal-header bg-white border-bottom-0 pb-0"><h5 class="modal-title fw-bold text-dark">Leistungsdaten: @SelectedPlayer.Firstname @SelectedPlayer.Lastname</h5><button type="button" class="btn-close" @onclick="CloseModals"></button></div>
                 <div class="modal-body bg-white">
-
                     <div class="card bg-light border-0 mb-4">
                         <div class="card-body p-3">
-                            <span class="text-muted small fw-bold text-uppercase d-block mb-2"><i
-                                    class="bi bi-graph-up me-1"></i> Punkte-Verlauf</span>
-                            <div style="height: 200px; width: 100%;">
-                                <canvas id="playerLineChart"></canvas>
-                            </div>
+                            <span class="text-muted small fw-bold text-uppercase d-block mb-2"><i class="bi bi-graph-up me-1"></i> Punkte-Verlauf</span>
+                            <div style="height: 200px; width: 100%;"><canvas id="playerLineChart"></canvas></div>
                         </div>
                     </div>
-
-                    <span class="text-muted small fw-bold text-uppercase d-block mb-2"><i class="bi bi-list-ul me-1"></i>
-                        Ergebnisse im Detail</span>
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-2"><i class="bi bi-list-ul me-1"></i> Ergebnisse</span>
                     <div class="list-group list-group-flush border rounded-3">
                         @foreach (var pt in tournaments.OrderByDescending(x => x.Tournament?.Date))
                         {
                             <div class="list-group-item d-flex justify-content-between align-items-center p-3">
-                                <div>
-                                    <span class="fw-bold text-dark d-block">@pt.Tournament?.Name</span>
-                                    <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>
-                                        @pt.Tournament?.Date.ToShortDateString()</span>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge bg-light text-dark border mb-1">Platz @pt.Rank</span><br />
-                                    <span class="text-success fw-bold fs-6">@pt.Points Punkte</span>
-                                </div>
+                                <div><span class="fw-bold text-dark d-block">@pt.Tournament?.Name</span><span class="text-muted small"><i class="bi bi-calendar3 me-1"></i> @pt.Tournament?.Date.ToShortDateString()</span></div>
+                                <div class="text-end"><span class="badge bg-light text-dark border mb-1">Platz @pt.Rank</span><br/><span class="text-success fw-bold fs-6">@pt.Points Punkte</span></div>
                             </div>
                         }
                     </div>
                 </div>
-                <div class="modal-footer border-top-0">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Schließen</button>
-                </div>
+                <div class="modal-footer border-top-0"><button class="btn btn-secondary" @onclick="CloseModals">Schließen</button></div>
             </div>
         </div>
     </div>
@@ -134,40 +96,17 @@
     <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">@(EditingPlayer.PlayerId == 0 ? "Neuen Spieler anlegen" : "Spieler bearbeiten")</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
-                </div>
+                <div class="modal-header"><h5 class="modal-title fw-bold">@(EditingPlayer.PlayerId == 0 ? "Neuen Spieler anlegen" : "Spieler bearbeiten")</h5><button type="button" class="btn-close" @onclick="CloseModals"></button></div>
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-md-6"><label class="form-label text-muted small">Vorname</label><input type="text"
-                                class="form-control" @bind="EditingPlayer.Firstname" /></div>
-                        <div class="col-md-6"><label class="form-label text-muted small">Nachname</label><input type="text"
-                                class="form-control" @bind="EditingPlayer.Lastname" /></div>
-                        <div class="col-md-6"><label class="form-label text-muted small">Elo</label><input type="number"
-                                class="form-control" @bind="EditingPlayer.Elo" /></div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small">Verein</label>
-                            <select class="form-select" @bind="EditingPlayer.ClubId">
-                                <option value="">-- Kein Verein --</option>
-                                @if (AllClubs != null)
-                                {
-                                    foreach (var club in AllClubs)
-                                    {
-                                        <option value="@club.ClubId">
-                                            @club.Name</option>
-                                    }
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-6"><label class="form-label text-muted small">Geburtsjahr</label><input
-                                type="number" class="form-control" @bind="EditingPlayer.BirthYear" /></div>
+                        <div class="col-md-6"><label class="form-label text-muted small">Vorname</label><input type="text" class="form-control" @bind="EditingPlayer.Firstname" /></div>
+                        <div class="col-md-6"><label class="form-label text-muted small">Nachname</label><input type="text" class="form-control" @bind="EditingPlayer.Lastname" /></div>
+                        <div class="col-md-6"><label class="form-label text-muted small">Elo</label><input type="number" class="form-control" @bind="EditingPlayer.Elo" /></div>
+                        <div class="col-md-6"><label class="form-label text-muted small">Verein</label><select class="form-select" @bind="EditingPlayer.ClubId"><option value="">-- Kein Verein --</option>@if (AllClubs != null) { foreach (var club in AllClubs) { <option value="@club.ClubId">@club.Name</option> } }</select></div>
+                        <div class="col-md-6"><label class="form-label text-muted small">Geburtsjahr</label><input type="number" class="form-control" @bind="EditingPlayer.BirthYear" /></div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button>
-                    <button class="btn btn-primary" @onclick="SavePlayer"><i class="bi bi-save me-1"></i> Speichern</button>
-                </div>
+                <div class="modal-footer border-top-0"><button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button><button class="btn btn-primary" @onclick="SavePlayer"><i class="bi bi-save me-1"></i> Speichern</button></div>
             </div>
         </div>
     </div>
@@ -176,133 +115,23 @@
 @if (IsDeleteModalOpen && PlayerToDelete != null)
 {
     <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0">
-                <div class="modal-header bg-danger text-white border-0">
-                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Löschen bestätigen</h5>
-                </div>
-                <div class="modal-body">
-                    <p>Spieler <strong>@PlayerToDelete.Firstname @PlayerToDelete.Lastname</strong> samt aller Ergebnisse
-                        unwiderruflich löschen?</p>
-                </div>
-                <div class="modal-footer border-0">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button>
-                    <button class="btn btn-danger" @onclick="DeletePlayer">Löschen</button>
-                </div>
-            </div>
-        </div>
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0"><div class="modal-header bg-danger text-white border-0"><h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Löschen</h5></div><div class="modal-body"><p>Spieler <strong>@PlayerToDelete.Firstname @PlayerToDelete.Lastname</strong> löschen?</p></div><div class="modal-footer border-0"><button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button><button class="btn btn-danger" @onclick="DeletePlayer">Löschen</button></div></div></div>
     </div>
 }
 
 @code {
-    [SupplyParameterFromQuery]
-    public int? EditPlayerId { get; set; }
+    [SupplyParameterFromQuery] public int? EditPlayerId { get; set; }
+    private List<Player>? AllPlayers; private List<Club>? AllClubs; private bool IsEditModalOpen = false; private bool IsDeleteModalOpen = false; private bool IsTournamentListModalOpen = false; private Player? EditingPlayer; private Player? PlayerToDelete; private Player? SelectedPlayer;
 
-    private List<Player>? AllPlayers;
-    private List<Club>? AllClubs;
-
-    private bool IsEditModalOpen = false;
-    private bool IsDeleteModalOpen = false;
-    private bool IsTournamentListModalOpen = false;
-
-    private Player? EditingPlayer;
-    private Player? PlayerToDelete;
-    private Player? SelectedPlayer;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadData();
-        if (EditPlayerId.HasValue && AllPlayers != null)
-        {
-            var p = AllPlayers.FirstOrDefault(x => x.PlayerId == EditPlayerId.Value);
-            if (p != null) OpenEditModal(p);
-        }
-    }
-
-    private async Task LoadData()
-    {
-        using var db = await DbFactory.CreateDbContextAsync();
-        AllPlayers = await db.Players.Include(p => p.Club).Include(p => p.PlayerTournaments).ThenInclude(pt =>
-        pt.Tournament).ToListAsync();
-        AllClubs = await db.Clubs.OrderBy(c => c.Name).ToListAsync();
-    }
-
-    private async Task OpenTournamentListModal(Player player)
-    {
-        SelectedPlayer = player;
-        IsTournamentListModalOpen = true;
-        StateHasChanged();
-
-        // Warten bis Modal im DOM ist
-        await Task.Delay(100);
-
-        // DATEN FÜR CHART.JS (PUNKTE)
-        var chrono = SelectedPlayer.PlayerTournaments.OrderBy(pt => pt.Tournament?.Date).ToList();
-        var labels = chrono.Select(pt => pt.Tournament?.Name ?? "?").ToArray();
-        var data = chrono.Select(pt => pt.Points).ToArray();
-
-        await JS.InvokeVoidAsync("window.chartManager.renderLineChart", "playerLineChart", labels, data);
-    }
-
+    protected override async Task OnInitializedAsync() { await LoadData(); if (EditPlayerId.HasValue && AllPlayers != null) { var p = AllPlayers.FirstOrDefault(x => x.PlayerId == EditPlayerId.Value); if (p != null) OpenEditModal(p); } }
+    private async Task LoadData() { using var db = await DbFactory.CreateDbContextAsync(); AllPlayers = await db.Players.Include(p => p.Club).Include(p => p.PlayerTournaments).ThenInclude(pt => pt.Tournament).ToListAsync(); AllClubs = await db.Clubs.OrderBy(c => c.Name).ToListAsync(); }
+    
+    private async Task OpenTournamentListModal(Player player) { SelectedPlayer = player; IsTournamentListModalOpen = true; StateHasChanged(); await Task.Delay(50); var chrono = SelectedPlayer.PlayerTournaments.OrderBy(pt => pt.Tournament?.Date).ToList(); await JS.InvokeVoidAsync("window.chartManager.renderLineChart", "playerLineChart", chrono.Select(pt => pt.Tournament?.Name ?? "").ToArray(), chrono.Select(pt => pt.Points).ToArray()); }
     private void OpenAddModal() { EditingPlayer = new Player(); IsEditModalOpen = true; }
-    private void OpenEditModal(Player player)
-    {
-        EditingPlayer = new Player
-        {
-            PlayerId = player.PlayerId,
-            Firstname =
-    player.Firstname,
-            Lastname = player.Lastname,
-            Country = player.Country,
-            Elo = player.Elo,
-            ClubId = player.ClubId,
-            BirthYear = player.BirthYear,
-            AgeGroup = player.AgeGroup
-        }; IsEditModalOpen = true;
-    }
+    private void OpenEditModal(Player player) { EditingPlayer = new Player { PlayerId = player.PlayerId, Firstname = player.Firstname, Lastname = player.Lastname, Country = player.Country, Elo = player.Elo, ClubId = player.ClubId, BirthYear = player.BirthYear, AgeGroup = player.AgeGroup }; IsEditModalOpen = true; }
     private void OpenDeleteModal(Player player) { PlayerToDelete = player; IsDeleteModalOpen = true; }
-    private void CloseModals()
-    {
-        IsEditModalOpen = false; IsDeleteModalOpen = false; IsTournamentListModalOpen = false;
-        EditingPlayer = null; PlayerToDelete = null; SelectedPlayer = null; if (EditPlayerId.HasValue)
-            NavManager.NavigateTo("/spieler", false);
-    }
+    private void CloseModals() { IsEditModalOpen = false; IsDeleteModalOpen = false; IsTournamentListModalOpen = false; EditingPlayer = null; PlayerToDelete = null; SelectedPlayer = null; if (EditPlayerId.HasValue) NavManager.NavigateTo("/spieler", false); }
 
-    private string CalcAgeGroup(int birthYear)
-    {
-        var today = DateTime.Now;
-        int seasonStart = today.Month >= 9 ? today.Year : today.Year - 1;
-        int age = seasonStart - birthYear;
-        if (age <= 8) return "U8"; if (age <= 10) return "U10"; if (age <= 12) return "U12"; if (age <= 14) return "U14"; if
-        (age <= 16) return "U16"; if (age <= 18) return "U18"; return "Allgemein";
-    }
-
-    private async Task SavePlayer()
-    {
-        if (EditingPlayer == null) return;
-        using var db = await DbFactory.CreateDbContextAsync();
-        EditingPlayer.AgeGroup = EditingPlayer.BirthYear.HasValue ? CalcAgeGroup(EditingPlayer.BirthYear.Value) : "";
-
-        if (EditingPlayer.PlayerId == 0) db.Players.Add(EditingPlayer);
-        else
-        {
-            var dbPlayer = await db.Players.FindAsync(EditingPlayer.PlayerId); if (dbPlayer != null)
-            {
-                dbPlayer.Firstname =
-        EditingPlayer.Firstname; dbPlayer.Lastname = EditingPlayer.Lastname; dbPlayer.Country = EditingPlayer.Country;
-                dbPlayer.Elo = EditingPlayer.Elo; dbPlayer.ClubId = EditingPlayer.ClubId; dbPlayer.BirthYear = EditingPlayer.BirthYear;
-                dbPlayer.AgeGroup = EditingPlayer.AgeGroup; db.Players.Update(dbPlayer);
-            }
-        }
-        await db.SaveChangesAsync(); await LoadData(); CloseModals();
-    }
-
-    private async Task DeletePlayer()
-    {
-        if (PlayerToDelete == null) return;
-        using var db = await DbFactory.CreateDbContextAsync();
-        var dbPlayer = await db.Players.FindAsync(PlayerToDelete.PlayerId);
-        if (dbPlayer != null) { db.Players.Remove(dbPlayer); await db.SaveChangesAsync(); }
-        await LoadData(); CloseModals();
-    }
+    private async Task SavePlayer() { if (EditingPlayer == null) return; using var db = await DbFactory.CreateDbContextAsync(); EditingPlayer.AgeGroup = EditingPlayer.BirthYear.HasValue ? (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 8 ? "U8" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 10 ? "U10" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 12 ? "U12" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 14 ? "U14" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 16 ? "U16" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 18 ? "U18" : "Allgemein" : ""; if (EditingPlayer.PlayerId == 0) db.Players.Add(EditingPlayer); else { var dbP = await db.Players.FindAsync(EditingPlayer.PlayerId); if (dbP != null) { dbP.Firstname = EditingPlayer.Firstname; dbP.Lastname = EditingPlayer.Lastname; dbP.Elo = EditingPlayer.Elo; dbP.ClubId = EditingPlayer.ClubId; dbP.BirthYear = EditingPlayer.BirthYear; dbP.AgeGroup = EditingPlayer.AgeGroup; db.Players.Update(dbP); } } await db.SaveChangesAsync(); await LoadData(); CloseModals(); }
+    private async Task DeletePlayer() { if (PlayerToDelete == null) return; using var db = await DbFactory.CreateDbContextAsync(); var dbP = await db.Players.FindAsync(PlayerToDelete.PlayerId); if (dbP != null) { db.Players.Remove(dbP); await db.SaveChangesAsync(); } await LoadData(); CloseModals(); }
 }

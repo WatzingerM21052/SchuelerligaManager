@@ -1,41 +1,52 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.JSInterop;
-using ChessTournamentManager.Shared.Models;
+using Microsoft.Data.Sqlite; // NEU: Wird gebraucht, um die Datei-Sperre zu lösen!
 
 namespace ChessTournamentManager.Client.Services
 {
     public class DatabaseManager
     {
-        private readonly IDbContextFactory<ChessDbContext> _dbFactory;
-        private readonly IJSRuntime _js;
-        private const string DbFileName = "chess.db";
+        private readonly IJSRuntime _jsRuntime;
+        private const string DbFilename = "chess.db";
 
-        public DatabaseManager(IDbContextFactory<ChessDbContext> dbFactory, IJSRuntime js)
+        public DatabaseManager(IJSRuntime jsRuntime)
         {
-            _dbFactory = dbFactory;
-            _js = js;
+            _jsRuntime = jsRuntime;
+        }
+
+        public async Task ImportDatabase(Stream fileStream)
+        {
+            // 1. ZWINGEND: Löst die Datenbank-Sperre im Browser!
+            SqliteConnection.ClearAllPools();
+
+            // 2. Neue Daten in den Arbeitsspeicher laden
+            using var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
+
+            // 3. Alte Datei löschen und neu schreiben
+            if (File.Exists(DbFilename)) File.Delete(DbFilename);
+            await File.WriteAllBytesAsync(DbFilename, fileBytes);
         }
 
         public async Task DownloadDatabase()
         {
-            if (File.Exists(DbFileName))
-            {
-                var bytes = await File.ReadAllBytesAsync(DbFileName);
-                await _js.InvokeVoidAsync("downloadFileFromStream", "Schuelerliga_Datenbank.db", bytes);
-            }
+            // ZWINGEND: Sperre lösen, damit wir die Datei überhaupt lesen dürfen
+            SqliteConnection.ClearAllPools();
+
+            if (!File.Exists(DbFilename)) return;
+            var fileBytes = await File.ReadAllBytesAsync(DbFilename);
+            var base64 = Convert.ToBase64String(fileBytes);
+            await _jsRuntime.InvokeVoidAsync("window.downloadBinaryFile", DbFilename, base64);
         }
 
-        public async Task ImportDatabase(Stream uploadStream)
+        public async Task<string> GetDatabaseAsBase64Async()
         {
-            using var db = await _dbFactory.CreateDbContextAsync();
-            await db.Database.CloseConnectionAsync();
+            // ZWINGEND: Sperre lösen
+            SqliteConnection.ClearAllPools();
 
-            using (var fileStream = File.Create(DbFileName))
-            {
-                await uploadStream.CopyToAsync(fileStream);
-            }
-
-            await db.Database.EnsureCreatedAsync();
+            if (!File.Exists(DbFilename)) return string.Empty;
+            var fileBytes = await File.ReadAllBytesAsync(DbFilename);
+            return Convert.ToBase64String(fileBytes);
         }
     }
 }

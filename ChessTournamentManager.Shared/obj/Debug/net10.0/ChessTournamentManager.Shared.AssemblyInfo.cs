@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ChessTournamentManager.Shared")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8ad18558e742f992cdfa066eb0f6085d9b926c3d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c3940f335308770742c72ea15a4cf7ad79205d0c")]
 [assembly: System.Reflection.AssemblyProductAttribute("ChessTournamentManager.Shared")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ChessTournamentManager.Shared")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
