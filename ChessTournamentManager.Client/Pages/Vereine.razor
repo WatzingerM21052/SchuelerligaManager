@@ -21,35 +21,35 @@
     }
     else
     {
-        <div class="row g-4">
-            @foreach (var club in AllClubs.OrderBy(c => c.Name))
-            {
-                <div class="col-md-4 col-sm-6">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <h5 class="card-title fw-bold text-dark mb-0">@club.Name</h5>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-light border" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                        <li><button class="dropdown-item" @onclick="() => OpenEditModal(club)"><i class="bi bi-pencil me-2"></i> Umbenennen</button></li>
-                                        <li><button class="dropdown-item text-danger" @onclick="() => OpenDeleteModal(club)"><i class="bi bi-trash me-2"></i> Löschen</button></li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex align-items-center text-muted small mb-3">
-                                <i class="bi bi-people-fill me-2 fs-5"></i> 
-                                <span class="fw-bold fs-6 me-1">@(club.Players?.Count ?? 0)</span> registrierte Spieler
-                            </div>
-
-                            <button class="btn btn-outline-primary btn-sm w-100 fw-bold" @onclick="() => OpenPlayersModal(club)">
-                                <i class="bi bi-list-ul me-1"></i> Mitglieder anzeigen
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            }
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-4">Vereinsname</th>
+                            <th class="text-center">Mitglieder</th>
+                            <th class="text-end pe-4">Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var club in AllClubs.OrderBy(c => c.Name))
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark fs-6">@club.Name</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary fw-bold" @onclick="() => OpenPlayersModal(club)">
+                                        <i class="bi bi-people-fill me-1"></i> @(club.Players?.Count ?? 0) Spieler anzeigen
+                                    </button>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-light border me-1" @onclick="() => OpenEditModal(club)" title="Umbenennen"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => OpenDeleteModal(club)" title="Löschen"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     }
 </div>
@@ -163,15 +163,13 @@
     private async Task LoadClubs()
     {
         using var db = await DbFactory.CreateDbContextAsync();
-        // Läd die Vereine INKLUSIVE der verbundenen Spielerliste!
         AllClubs = await db.Clubs.Include(c => c.Players).ToListAsync();
     }
 
-    // --- DIE NEUE WEITERLEITUNGS-FUNKTION ---
+    // --- GITHUB PAGES FIX: KEIN "/" AM ANFANG ---
     private void NavigateToPlayer(int playerId)
     {
-        // Wir senden den Nutzer an die Spieler-Seite und hängen die ID als Geheimcode an
-        NavManager.NavigateTo($"/spieler?editPlayerId={playerId}");
+        NavManager.NavigateTo($"spieler?editPlayerId={playerId}");
     }
 
     // --- MODAL STEUERUNG ---
@@ -182,46 +180,6 @@
     private void CloseModals() { IsEditModalOpen = false; IsDeleteModalOpen = false; IsPlayersModalOpen = false; EditingClub = null; ClubToDelete = null; SelectedClub = null; }
 
     // --- DATENBANK OPERATIONEN ---
-    private async Task SaveClub()
-    {
-        if (EditingClub == null || string.IsNullOrWhiteSpace(EditingClub.Name)) return;
-
-        using var db = await DbFactory.CreateDbContextAsync();
-        if (EditingClub.ClubId == 0)
-        {
-            db.Clubs.Add(EditingClub);
-        }
-        else
-        {
-            var dbC = await db.Clubs.FindAsync(EditingClub.ClubId);
-            if (dbC != null)
-            {
-                dbC.Name = EditingClub.Name;
-                db.Clubs.Update(dbC);
-            }
-        }
-        await db.SaveChangesAsync();
-        await LoadClubs();
-        CloseModals();
-    }
-
-    private async Task DeleteClub()
-    {
-        if (ClubToDelete == null) return;
-
-        using var db = await DbFactory.CreateDbContextAsync();
-        var dbC = await db.Clubs.Include(c => c.Players).FirstOrDefaultAsync(c => c.ClubId == ClubToDelete.ClubId);
-        if (dbC != null)
-        {
-            // Setzt alle Spieler des Vereins auf "vereinslos"
-            foreach (var player in dbC.Players)
-            {
-                player.ClubId = null;
-            }
-            db.Clubs.Remove(dbC);
-            await db.SaveChangesAsync();
-        }
-        await LoadClubs();
-        CloseModals();
-    }
+    private async Task SaveClub() { if (EditingClub == null || string.IsNullOrWhiteSpace(EditingClub.Name)) return; using var db = await DbFactory.CreateDbContextAsync(); if (EditingClub.ClubId == 0) { db.Clubs.Add(EditingClub); } else { var dbC = await db.Clubs.FindAsync(EditingClub.ClubId); if (dbC != null) { dbC.Name = EditingClub.Name; db.Clubs.Update(dbC); } } await db.SaveChangesAsync(); await LoadClubs(); CloseModals(); }
+    private async Task DeleteClub() { if (ClubToDelete == null) return; using var db = await DbFactory.CreateDbContextAsync(); var dbC = await db.Clubs.Include(c => c.Players).FirstOrDefaultAsync(c => c.ClubId == ClubToDelete.ClubId); if (dbC != null) { foreach (var player in dbC.Players) { player.ClubId = null; } db.Clubs.Remove(dbC); await db.SaveChangesAsync(); } await LoadClubs(); CloseModals(); }
 }

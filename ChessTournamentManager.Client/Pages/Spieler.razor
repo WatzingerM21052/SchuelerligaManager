@@ -132,7 +132,6 @@
 }
 
 @code {
-    // Fängt den Klick von der Vereinsseite ab
     [SupplyParameterFromQuery] public int? EditPlayerId { get; set; }
     
     private List<Player>? AllPlayers; private List<Club>? AllClubs; private bool IsEditModalOpen = false; private bool IsDeleteModalOpen = false; private bool IsTournamentListModalOpen = false; private Player? EditingPlayer; private Player? PlayerToDelete; private Player? SelectedPlayer;
@@ -142,17 +141,18 @@
     
     private async Task OpenTournamentListModal(Player player) { SelectedPlayer = player; IsTournamentListModalOpen = true; StateHasChanged(); await Task.Delay(50); var chrono = SelectedPlayer.PlayerTournaments.OrderBy(pt => pt.Tournament?.Date).ToList(); await JS.InvokeVoidAsync("window.chartManager.renderLineChart", "playerLineChart", chrono.Select(pt => pt.Tournament?.Name ?? "").ToArray(), chrono.Select(pt => pt.Points).ToArray()); }
     
-    // --- DIE NEUE WEITERLEITUNGS-FUNKTION ---
+    // --- GITHUB PAGES FIX: KEIN "/" AM ANFANG ---
     private void NavigateToTournament(int tournamentId)
     {
-        // Wir senden den Nutzer an die Turnier-Seite und öffnen das Event
-        NavManager.NavigateTo($"/turniere?openTournamentId={tournamentId}");
+        NavManager.NavigateTo($"turniere?openTournamentId={tournamentId}");
     }
 
     private void OpenAddModal() { EditingPlayer = new Player(); IsEditModalOpen = true; }
     private void OpenEditModal(Player player) { EditingPlayer = new Player { PlayerId = player.PlayerId, Firstname = player.Firstname, Lastname = player.Lastname, Country = player.Country, Elo = player.Elo, ClubId = player.ClubId, BirthYear = player.BirthYear, AgeGroup = player.AgeGroup }; IsEditModalOpen = true; }
     private void OpenDeleteModal(Player player) { PlayerToDelete = player; IsDeleteModalOpen = true; }
-    private void CloseModals() { IsEditModalOpen = false; IsDeleteModalOpen = false; IsTournamentListModalOpen = false; EditingPlayer = null; PlayerToDelete = null; SelectedPlayer = null; if (EditPlayerId.HasValue) NavManager.NavigateTo("/spieler", false); }
+    
+    // --- GITHUB PAGES FIX ---
+    private void CloseModals() { IsEditModalOpen = false; IsDeleteModalOpen = false; IsTournamentListModalOpen = false; EditingPlayer = null; PlayerToDelete = null; SelectedPlayer = null; if (EditPlayerId.HasValue) NavManager.NavigateTo("spieler", false); }
 
     private async Task SavePlayer() { if (EditingPlayer == null) return; using var db = await DbFactory.CreateDbContextAsync(); EditingPlayer.AgeGroup = EditingPlayer.BirthYear.HasValue ? (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 8 ? "U8" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 10 ? "U10" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 12 ? "U12" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 14 ? "U14" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 16 ? "U16" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 18 ? "U18" : "Allgemein" : ""; if (EditingPlayer.PlayerId == 0) db.Players.Add(EditingPlayer); else { var dbP = await db.Players.FindAsync(EditingPlayer.PlayerId); if (dbP != null) { dbP.Firstname = EditingPlayer.Firstname; dbP.Lastname = EditingPlayer.Lastname; dbP.Elo = EditingPlayer.Elo; dbP.ClubId = EditingPlayer.ClubId; dbP.BirthYear = EditingPlayer.BirthYear; dbP.AgeGroup = EditingPlayer.AgeGroup; db.Players.Update(dbP); } } await db.SaveChangesAsync(); await LoadData(); CloseModals(); }
     private async Task DeletePlayer() { if (PlayerToDelete == null) return; using var db = await DbFactory.CreateDbContextAsync(); var dbP = await db.Players.FindAsync(PlayerToDelete.PlayerId); if (dbP != null) { db.Players.Remove(dbP); await db.SaveChangesAsync(); } await LoadData(); CloseModals(); }
