@@ -162,7 +162,7 @@
         ErrorMessage = ""; SuccessMessage = "";
         PendingImports.Clear();
 
-        foreach (var file in e.GetMultipleFiles(maxAllowedFiles: MAX_FILE_COUNT))
+        foreach (var file in e.GetMultipleFiles(maximumFileCount: MAX_FILE_COUNT))
         {
             try 
             {
@@ -236,7 +236,7 @@
         {
             ErrorMessage = ""; SuccessMessage = ""; IsProcessingPlayers = true; StateHasChanged();
             var allExcelPlayers = new List<Player>();
-            foreach (var file in e.GetMultipleFiles(maxAllowedFiles: MAX_FILE_COUNT)) { try { using var stream = file.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); var memoryStream = new MemoryStream(); await stream.CopyToAsync(memoryStream); memoryStream.Position = 0; var filePlayers = ExcelService.ReadExcelStream(memoryStream); if (filePlayers != null) allExcelPlayers.AddRange(filePlayers); } catch (Exception ex) { ErrorMessage += $"Fehler bei {file.Name}: {ex.Message} "; } }
+            foreach (var file in e.GetMultipleFiles(maximumFileCount: MAX_FILE_COUNT)) { try { using var stream = file.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); var memoryStream = new MemoryStream(); await stream.CopyToAsync(memoryStream); memoryStream.Position = 0; var filePlayers = ExcelService.ReadExcelStream(memoryStream); if (filePlayers != null) allExcelPlayers.AddRange(filePlayers); } catch (Exception ex) { ErrorMessage += $"Fehler bei {file.Name}: {ex.Message} "; } }
             if (!allExcelPlayers.Any()) { ErrorMessage += "Keine Spieler gefunden."; IsProcessingPlayers = false; return; }
             using var db = await DbFactory.CreateDbContextAsync(); await db.Database.EnsureCreatedAsync();
             var existingClubs = await db.Clubs.ToListAsync(); var existingPlayers = await db.Players.ToListAsync();
