@@ -8,39 +8,47 @@
 <PageTitle>Turnier-Analytics</PageTitle>
 
 <style>
-    /* DAS VERBESSERTE, ULTIMATIVE PDF-PRINT DESIGN (A4 QUERFORMAT) */
+    /* DAS RADIKALE PDF-PRINT DESIGN (A4 QUERFORMAT - GARANTIERT OHNE SCROLLBALKEN) */
     @@media print {
-        /* Reset aller Scrollbars und Höhenbeschränkungen für echten Mehrseiten-Druck */
-        html, body, #app, main { 
+        @@page { size: A4 landscape; margin: 1cm; }
+
+        /* 1. RADIKALER RESET ALLER SCROLL-CONTAINER */
+        html, body, #app, main, .container-fluid { 
             height: auto !important; 
             overflow: visible !important; 
             background: white !important; 
             color: #000; 
             font-family: 'Segoe UI', sans-serif; 
-            font-size: 10pt;
             margin: 0 !important;
             padding: 0 !important;
         }
 
-        @@page { size: A4 landscape; margin: 1cm; }
-        
+        /* 2. BOOTSTRAP SCROLLBAR KILLER */
+        .table-responsive {
+            overflow: visible !important;
+            -webkit-overflow-scrolling: auto !important;
+            display: block !important;
+            width: 100% !important;
+        }
+
+        /* Ausblenden der UI Elemente */
         .d-print-none, .sidebar, header, .card-header canvas { display: none !important; }
         .print-only { display: block !important; }
         
-        /* Tabellen für Druck optimieren: Kein Abschneiden, korrekter Seitenumbruch */
-        table { width: 100% !important; border-collapse: collapse !important; page-break-inside: auto; margin-bottom: 20px;}
-        thead { display: table-header-group; } /* Wiederholt Tabellenkopf auf jeder neuen Seite */
-        tfoot { display: table-footer-group; }
-        tr { page-break-inside: avoid; page-break-after: auto; }
-        th { background-color: #f1f3f5 !important; color: #000 !important; border-bottom: 2px solid #000 !important; -webkit-print-color-adjust: exact; padding: 8px !important; font-size: 9.5pt;}
-        td { border-bottom: 1px solid #ccc !important; padding: 6px !important; font-size: 9.5pt;}
+        /* 3. Tabellen-Design für den Druck */
+        table { width: 100% !important; border-collapse: collapse !important; margin-bottom: 25px !important;}
+        thead { display: table-header-group !important; } /* Wiederholt Tabellenkopf auf jeder neuen Seite */
+        tfoot { display: table-footer-group !important; }
+        tr { page-break-inside: avoid !important; }
+        th { background-color: #f1f3f5 !important; color: #000 !important; border-bottom: 2px solid #000 !important; -webkit-print-color-adjust: exact; padding: 6px !important; font-size: 9.5pt;}
+        td { border-bottom: 1px solid #ccc !important; padding: 4px !important; font-size: 9.5pt;}
         
         /* Medaillen-Farben für den Druck erhalten */
         .text-warning { color: #d4af37 !important; -webkit-print-color-adjust: exact; }
         .text-secondary { color: #8a8d91 !important; -webkit-print-color-adjust: exact; }
         .text-danger { color: #cd7f32 !important; -webkit-print-color-adjust: exact; } /* Bronze */
 
-        .page-break { page-break-after: always; }
+        .page-break { page-break-before: always !important; }
         .print-header { border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
         .print-title { font-size: 1.5rem; font-weight: bold; text-transform: uppercase; margin: 0; }
         .print-subtitle { color: #666; margin: 0; font-style: italic;}
@@ -160,8 +168,10 @@
         {
             var classRows = group.ToList();
 
-            <h3 style="margin-top: 1.5rem; color: #000; font-size: 1.2rem; font-weight: bold;">Altersklasse @group.Key</h3>
-            <table class="table">
+            @if (SelectedAge == "Alle" && group != printGroups.First()) { <div class="page-break"></div> }
+
+            <h3 style="color: #000; font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;">Altersklasse @group.Key</h3>
+            <table>
                 <thead>
                     <tr>
                         <th class="text-center" style="width: 50px;">Rang</th>
@@ -191,7 +201,6 @@
                     }
                 </tbody>
             </table>
-            @if (SelectedAge == "Alle") { <div class="page-break"></div> }
         }
     </div>
 }
@@ -250,7 +259,7 @@
         {
             var classRows = group.ToList();
             sb.AppendLine($"ALTERSKLASSE {group.Key}");
-            // NEU IM EXCEL: Es stehen jetzt "Platzierungen" statt "Punkte"
+            // IM EXCEL: Es stehen jetzt "Platzierungen" statt "Punkte"
             sb.Append("Rang;Name;Verein;Punkte Gesamt;Anz. Turniere");
             foreach (var t in FilteredTournaments) { sb.Append($";{t.Name} (Platz)"); }
             sb.AppendLine();
