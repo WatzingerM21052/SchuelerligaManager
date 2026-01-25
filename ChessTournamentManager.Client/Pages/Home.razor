@@ -177,7 +177,19 @@
         return dbClub; 
     }
 
-    // --- DIE NEUE, 100% SICHERE VEREINSLOS-LOGIK ---
+    // --- DIE PRÄZISE VEREINSLOS-PRÜFUNG WIE GEWÜNSCHT ---
+    // Prüft NUR auf "-" oder "vereinslos" (Groß/Kleinschreibung egal)
+    private bool IsVereinslos(string? clubName)
+    {
+        if (string.IsNullOrWhiteSpace(clubName)) return true;
+        
+        var text = clubName.Trim();
+        if (text == "-") return true;
+        if (text.ToLowerInvariant().Contains("vereinslos")) return true;
+        
+        return false;
+    }
+
     private async Task<(Player, bool, bool)> GetOrMergePlayer(ChessDbContext db, List<Player> existingPlayers, List<Club> existingClubs, Player importedPlayer, int? clubId) 
     { 
         bool isNew = false; 
@@ -198,44 +210,34 @@
         { 
             bool changed = false; 
 
-            // 1. Check: Ist der Spieler aktuell "Vereinslos" im System?
-            bool isCurrentlyVereinslos = false;
+            // 1. Hat der Spieler aktuell GAR KEINEN Verein ODER einen Dummy-Verein ("-" oder "Vereinslos")?
+            bool needsRealClub = false;
             if (!dbPlayer.ClubId.HasValue) 
             {
-                isCurrentlyVereinslos = true; // Hat gar keinen Club in der DB
+                needsRealClub = true;
             }
             else
             {
                 var curClub = existingClubs.FirstOrDefault(c => c.ClubId == dbPlayer.ClubId.Value);
-                if (curClub != null)
+                if (curClub == null || IsVereinslos(curClub.Name))
                 {
-                    string curClubName = curClub.Name.Trim().ToLower();
-                    // Sucht nach "vereinslos", "kein verein" oder leeren Einträgen - EGAL WIE GESCHRIEBEN
-                    if (curClubName.Contains("vereinslos") || curClubName.Contains("kein verein") || curClubName == "-" || string.IsNullOrWhiteSpace(curClubName))
-                    {
-                        isCurrentlyVereinslos = true;
-                    }
+                    needsRealClub = true;
                 }
             }
 
-            // 2. Check: Ist der NEUE Verein aus der Excel-Liste ein echter Verein?
-            bool isNewClubReal = false;
+            // 2. Bietet der Excel-Import jetzt einen ECHTEN Verein an?
+            bool hasRealClubToOffer = false;
             if (clubId.HasValue)
             {
                 var newClub = existingClubs.FirstOrDefault(c => c.ClubId == clubId.Value);
-                if (newClub != null)
+                if (newClub != null && !IsVereinslos(newClub.Name))
                 {
-                    string newClubName = newClub.Name.Trim().ToLower();
-                    // Wenn der NEUE Vereinsname nicht "vereinslos" ist, ist er echt.
-                    if (!newClubName.Contains("vereinslos") && !newClubName.Contains("kein verein") && newClubName != "-" && !string.IsNullOrWhiteSpace(newClubName))
-                    {
-                        isNewClubReal = true;
-                    }
+                    hasRealClubToOffer = true;
                 }
             }
 
-            // 3. AKTUALISIERUNG: Wenn er bisher vereinslos war UND der neue Verein echt ist, dann updaten!
-            if (isCurrentlyVereinslos && isNewClubReal) 
+            // 3. Wenn er einen braucht UND das Excel einen hat -> Überschreiben!
+            if (needsRealClub && hasRealClubToOffer) 
             { 
                 dbPlayer.ClubId = clubId; 
                 changed = true; 
