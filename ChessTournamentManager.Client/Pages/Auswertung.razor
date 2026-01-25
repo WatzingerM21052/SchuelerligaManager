@@ -7,62 +7,16 @@
 
 <PageTitle>Turnier-Analytics</PageTitle>
 
-<style>
-    /* DAS NEUE, SAUBERE PDF-DESIGN (KEIN BOOTSTRAP-EINFLUSS) */
-    @@media print {
-        @@page { size: A4 landscape; margin: 12mm; }
-
-        /* RADIKALER RESET */
-        html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: white !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: visible !important; }
-        .d-print-none { display: none !important; }
-        .print-only { display: block !important; }
-
-        /* HEADER DESIGN */
-        .pdf-header { border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .pdf-title { font-size: 24pt; font-weight: 800; color: #000; margin: 0; line-height: 1; text-transform: uppercase;}
-        .pdf-subtitle { font-size: 11pt; color: #555; margin: 5px 0 0 0; }
-        .pdf-meta { font-size: 9pt; color: #777; text-align: right; }
-
-        /* GRUPPEN ÜBERSCHRIFTEN */
-        .pdf-group-title { font-size: 16pt; font-weight: 700; color: #0d6efd; margin-top: 30px; margin-bottom: 10px; border-bottom: 2px solid #0d6efd; padding-bottom: 3px; }
-
-        /* PURE NATIVE HTML TABELLE (KEIN SCROLLBALKEN MÖGLICH) */
-        .pdf-table { width: 100% !important; border-collapse: collapse !important; font-size: 10pt; color: #000; }
-        .pdf-table th { background-color: #f1f3f5 !important; color: #000 !important; border-bottom: 2px solid #000; text-align: left; padding: 8px; font-weight: bold; -webkit-print-color-adjust: exact; }
-        .pdf-table th.center { text-align: center; }
-        .pdf-table td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
-        .pdf-table td.center { text-align: center; }
-        
-        /* ZEBRA STRIPING FÜR BESSERE LESBARKEIT */
-        .pdf-table tr:nth-child(even) { background-color: #fcfcfc !important; -webkit-print-color-adjust: exact; }
-        
-        /* HERVORHEBUNG FÜR SPALTEN */
-        .col-tournament { background-color: #f8f9fa !important; border-left: 1px solid #eee; border-right: 1px solid #eee; -webkit-print-color-adjust: exact; }
-        .col-sum { font-weight: bold; }
-
-        /* MEDAILLEN DRUCKFARBEN */
-        .g-icon { color: #d4af37 !important; -webkit-print-color-adjust: exact; }
-        .s-icon { color: #8a8d91 !important; -webkit-print-color-adjust: exact; }
-        .b-icon { color: #cd7f32 !important; -webkit-print-color-adjust: exact; }
-
-        /* SAUBERER SEITENUMBRUCH */
-        .pdf-table thead { display: table-header-group; }
-        .pdf-table tr { page-break-inside: avoid; }
-        .page-break { page-break-before: always; }
-    }
-    .print-only { display: none; }
-</style>
-
-<div class="container-fluid px-4 py-3 min-vh-100 bg-light d-print-none">
+<div class="container-fluid px-4 py-3 min-vh-100 bg-light">
 
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
             <h2 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Turnier-Analytics</h2>
-            <span class="text-muted small">Live-Analytik und Gesamtwertung (Matrix)</span>
+            <span class="text-muted small">Live-Analytik und professioneller PDF-Generator</span>
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-success shadow-sm fw-bold" @onclick="ExportMatrixToExcel"><i class="bi bi-file-earmark-excel-fill me-1"></i> Excel Export</button>
-            <button class="btn btn-primary shadow-sm fw-bold" @onclick="PrintPage"><i class="bi bi-file-pdf-fill me-1"></i> PDF Generieren</button>
+            <button class="btn btn-primary shadow-sm fw-bold" @onclick="GenerateProfessionalPdf"><i class="bi bi-file-pdf-fill me-1"></i> PDF Generieren</button>
         </div>
     </div>
 
@@ -151,66 +105,6 @@
     }
 </div>
 
-@if (AllRows != null)
-{
-    var printGroups = SelectedAge == "Alle" ? FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g => g.Key) : FilteredRows.GroupBy(r => r.AgeGroup);
-
-    <div class="print-only">
-        <div class="pdf-header">
-            <div>
-                <h1 class="pdf-title">Schülerliga Gesamtwertung</h1>
-                <p class="pdf-subtitle">Saison @SelectedSeason @(UseStreichresultat ? "| inkl. 1 Streichresultat" : "")</p>
-            </div>
-            <div class="pdf-meta">
-                Stand: @DateTime.Now.ToShortDateString()<br />
-                Turniere: @FilteredTournaments.Count | Spieler: @FilteredRows.Count
-            </div>
-        </div>
-
-        @foreach (var group in printGroups)
-        {
-            var classRows = group.ToList();
-
-            @if (SelectedAge == "Alle" && group != printGroups.First()) { <div class="page-break"></div> }
-
-            <h3 class="pdf-group-title">Altersklasse @group.Key (@classRows.Count Spieler)</h3>
-            
-            <table class="pdf-table">
-                <thead>
-                    <tr>
-                        <th class="center" style="width: 60px;">Rang</th>
-                        <th>Name</th>
-                        <th>Verein</th>
-                        <th class="center" style="width: 60px;">Pkte.</th>
-                        <th class="center" style="width: 50px;">Sp.</th>
-                        @foreach (var tourney in FilteredTournaments) { <th class="center col-tournament">@Truncate(tourney.Name, 10)<br/><span style="font-size: 8pt; font-weight: normal;">(Rang)</span></th> }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var row in classRows)
-                    {
-                        <tr>
-                            <td class="center" style="font-weight: 700;">
-                                @if (row.Rank == 1) { <span>1. <i class="bi bi-trophy-fill g-icon"></i></span> }
-                                else if (row.Rank == 2) { <span>2. <i class="bi bi-trophy-fill s-icon"></i></span> }
-                                else if (row.Rank == 3) { <span>3. <i class="bi bi-trophy-fill b-icon"></i></span> }
-                                else { <span>@row.Rank.</span> }
-                            </td>
-                            <td style="font-weight: 600;">@row.Lastname @row.Firstname</td>
-                            <td>@(string.IsNullOrWhiteSpace(row.ClubName) || row.ClubName == "Vereinslos" ? "-" : row.ClubName)</td>
-                            <td class="center col-sum">@row.EffectivePoints</td>
-                            <td class="center">@row.TournamentsCount</td>
-                            @foreach (var tourney in FilteredTournaments) { 
-                                <td class="center col-tournament">@(row.Results.TryGetValue(tourney.TournamentId, out var res) ? res.Rank.ToString() + "." : "")</td> 
-                            }
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-    </div>
-}
-
 @code {
     private List<Tournament> AllTournaments = new(); private List<Tournament> FilteredTournaments = new(); private List<LeaderboardRow>? AllRows; private List<LeaderboardRow> FilteredRows = new();
     private string SelectedSeason = ""; private string SelectedAge = "Alle"; private string SelectedClub = "Alle"; private bool UseStreichresultat = false;
@@ -251,7 +145,31 @@
 
     private string Truncate(string value, int maxChars) { return value.Length <= maxChars ? value : value.Substring(0, maxChars) + "..."; }
 
-    private async Task PrintPage() => await JS.InvokeVoidAsync("window.print");
+    // --- DER NEUE PROFESSIONELLE JS-PDF EXPORT ---
+    private async Task GenerateProfessionalPdf()
+    {
+        // 1. Turnier-Spaltenkopfdaten vorbereiten
+        var tournamentsData = FilteredTournaments.Select(t => new { name = Truncate(t.Name, 12) }).ToList();
+
+        // 2. Gruppen vorbereiten (Genau wie in der Web-Ansicht)
+        var printGroups = SelectedAge == "Alle" ? FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g => g.Key) : FilteredRows.GroupBy(r => r.AgeGroup);
+
+        // 3. Das große JSON-Objekt für Javascript bauen
+        var groupsData = printGroups.Select(g => new {
+            groupName = g.Key,
+            rows = g.Select(r => new {
+                rank = r.Rank,
+                name = $"{r.Lastname} {r.Firstname}",
+                club = string.IsNullOrWhiteSpace(r.ClubName) || r.ClubName == "Vereinslos" ? "-" : r.ClubName,
+                points = r.EffectivePoints,
+                games = r.TournamentsCount,
+                results = FilteredTournaments.Select(t => r.Results.TryGetValue(t.TournamentId, out var res) ? $"{res.Rank}." : "-").ToList()
+            }).ToList()
+        }).ToList();
+
+        // 4. An jsPDF senden!
+        await JS.InvokeVoidAsync("window.pdfManager.generatePdf", SelectedSeason, UseStreichresultat, tournamentsData, groupsData);
+    }
 
     private async Task ExportMatrixToExcel()
     {
