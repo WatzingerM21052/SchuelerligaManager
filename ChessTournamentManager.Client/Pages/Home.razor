@@ -39,30 +39,18 @@
                     <h5 class="fw-bold text-dark"><i class="bi bi-database me-2 text-secondary"></i>1. Datenbank Management</h5>
                 </div>
                 <div class="card-body">
-                    
                     <div class="bg-light p-3 rounded-3 mb-4 border">
                         <span class="fw-bold text-dark d-block mb-2"><i class="bi bi-browser-chrome me-1"></i> Lokaler Browser-Speicher</span>
-                        <p class="text-muted small mb-3">
-                            @(IsAutoLoading ? "Prüfe automatischen Start-Cache..." : "Sichert die Daten permanent im Browser-Cache.")
-                        </p>
+                        <p class="text-muted small mb-3">@(IsAutoLoading ? "Prüfe automatischen Start-Cache..." : "Sichert die Daten permanent im Browser-Cache.")</p>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-primary shadow-sm flex-grow-1" @onclick="SaveToBrowserCache" disabled="@IsAutoLoading" title="Speichern">
-                                <i class="bi bi-save me-1"></i> Speichern
-                            </button>
-                            <button class="btn btn-outline-secondary shadow-sm flex-grow-1" @onclick="() => LoadFromBrowserCache(false)" disabled="@IsAutoLoading" title="Laden">
-                                <i class="bi bi-cloud-download me-1"></i> Laden
-                            </button>
-                            <button class="btn btn-outline-danger shadow-sm" @onclick="DeleteBrowserCache" disabled="@IsAutoLoading" title="Browser-Cache leeren">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <button class="btn btn-primary shadow-sm flex-grow-1" @onclick="SaveToBrowserCache" disabled="@IsAutoLoading" title="Speichern"><i class="bi bi-save me-1"></i> Speichern</button>
+                            <button class="btn btn-outline-secondary shadow-sm flex-grow-1" @onclick="() => LoadFromBrowserCache(false)" disabled="@IsAutoLoading" title="Laden"><i class="bi bi-cloud-download me-1"></i> Laden</button>
+                            <button class="btn btn-outline-danger shadow-sm" @onclick="DeleteBrowserCache" disabled="@IsAutoLoading" title="Browser-Cache leeren"><i class="bi bi-trash"></i></button>
                         </div>
                     </div>
-
                     <span class="fw-bold text-dark d-block mb-2 mt-4"><i class="bi bi-pc-display me-1"></i> Manuelles PC-Backup (.db)</span>
                     <InputFile OnChange="@LoadDbFromFile" accept=".db" class="form-control mb-3" />
-                    <button class="btn btn-outline-dark w-100" @onclick="SaveDbToFile">
-                        <i class="bi bi-download me-1"></i> Backup auf PC herunterladen
-                    </button>
+                    <button class="btn btn-outline-dark w-100" @onclick="SaveDbToFile"><i class="bi bi-download me-1"></i> Backup auf PC herunterladen</button>
                 </div>
             </div>
         </div>
@@ -70,38 +58,41 @@
         <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                    <h5 class="fw-bold text-dark"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>2. Turnier Batch-Import</h5>
+                    <h5 class="fw-bold text-dark"><i class="bi bi-trophy-fill me-2 text-success"></i>2. Event-Import (Turniergruppe)</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small mb-3">Zieht <b>bis zu 200</b> Turnier-Dateien (.xlsx) ein und erzeugt Matrix-Ergebnisse.</p>
+                    <p class="text-muted small mb-3">Zieht die Excel-Dateien aller Altersklassen (z.B. U10, U12...) eines Events ein und fasst sie zu <b>EINEM Gesamtevent</b> zusammen.</p>
                     <InputFile OnChange="@ImportMultipleExcel" accept=".xlsx" multiple class="form-control form-control-lg bg-light border-primary" />
                     
                     @if (PendingImports.Any())
                     {
                         <div class="bg-white border rounded-3 p-3 mt-4 shadow-sm">
                             <div class="d-flex align-items-center mb-3">
-                                <span class="badge bg-primary fs-6 me-2">@PendingImports.Count Turniere</span> bereit.
+                                <span class="badge bg-primary fs-6 me-2">@PendingImports.Count Dateien</span> für dieses Event.
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-bold">Name des Gesamtevents (z.B. Runde 1 - Ort):</label>
+                                <input @bind="MasterTournamentName" class="form-control fw-bold fs-6 border-primary" placeholder="z.B. Runde 1 - Frankenburg" />
                             </div>
 
                             <div class="mb-3 bg-light p-2 rounded border">
-                                <label class="form-label text-muted small fw-bold">Saison für alle:</label>
-                                <select class="form-select border-primary fw-bold" @bind="SelectedImportSeason">
-                                    @foreach (var season in ImportSeasons) { <option value="@season">Saison @season</option> }
-                                </select>
+                                <label class="form-label text-muted small fw-bold">Saison / Datum:</label>
+                                <div class="d-flex gap-2">
+                                    <input type="date" class="form-control" @bind="MasterTournamentDate" />
+                                </div>
                             </div>
 
-                            <div class="list-group mb-3" style="max-height: 150px; overflow-y: auto;">
+                            <div class="list-group mb-3" style="max-height: 100px; overflow-y: auto;">
                                 @foreach (var import in PendingImports)
                                 {
-                                    <div class="list-group-item p-2">
-                                        <input @bind="import.TournamentName" class="form-control fw-bold text-dark form-control-sm" placeholder="Turniername" />
-                                    </div>
+                                    <div class="list-group-item p-2 text-muted small"><i class="bi bi-file-earmark-excel text-success me-1"></i> @import.FileName <span class="float-end badge bg-secondary">@import.Players.Count Spieler</span></div>
                                 }
                             </div>
 
-                            <button class="btn btn-success w-100 fw-bold shadow-sm" @onclick="SaveAllToDatabase" disabled="@IsProcessing">
-                                @if (IsProcessing) { <span class="spinner-border spinner-border-sm me-1"></span> <span>Verarbeite...</span> }
-                                else { <i class="bi bi-rocket-takeoff-fill me-1"></i> <span>Turniere ins System schreiben</span> }
+                            <button class="btn btn-success w-100 fw-bold shadow-sm" @onclick="SaveAllAsOneTournament" disabled="@IsProcessing">
+                                @if (IsProcessing) { <span class="spinner-border spinner-border-sm me-1"></span> <span>Verschmelze Event...</span> }
+                                else { <i class="bi bi-rocket-takeoff-fill me-1"></i> <span>Event ins System schreiben</span> }
                             </button>
                         </div>
                     }
@@ -115,16 +106,9 @@
                     <h5 class="fw-bold text-dark"><i class="bi bi-people-fill me-2 text-info"></i>3. Stammdaten-Import (Batch)</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small mb-3">Liest <b>bis zu 200</b> Excel-Dateien ein, verknüpft Duplikate intelligent und füllt Lücken bei bestehenden Spielern auf.</p>
-                    
+                    <p class="text-muted small mb-3">Liest beliebig viele Excel-Dateien ein, verknüpft Duplikate intelligent und füllt Lücken bei bestehenden Spielern auf (keine Turniere).</p>
                     <InputFile OnChange="@ImportMultiplePlayersOnly" accept=".xlsx" multiple class="form-control form-control-lg bg-light border-info" />
-                    
-                    @if (IsProcessingPlayers)
-                    {
-                        <div class="d-flex align-items-center mt-3 text-info fw-bold">
-                            <span class="spinner-border spinner-border-sm me-2"></span> Analysiere Dateien und verarbeite Spieler...
-                        </div>
-                    }
+                    @if (IsProcessingPlayers) { <div class="d-flex align-items-center mt-3 text-info fw-bold"><span class="spinner-border spinner-border-sm me-2"></span> Analysiere Dateien und verarbeite Spieler...</div> }
                 </div>
             </div>
         </div>
@@ -135,7 +119,6 @@
     private class PendingImport
     {
         public string FileName { get; set; } = "";
-        public string TournamentName { get; set; } = "";
         public List<Player> Players { get; set; } = new();
     }
 
@@ -147,157 +130,39 @@
     private string ErrorMessage = ""; 
     private bool IsAutoLoading = false;
 
-    private List<string> ImportSeasons = new();
-    private string SelectedImportSeason = "";
+    // NEU: Nur noch 1 Name und 1 Datum für das gesamte Event
+    private string MasterTournamentName = "";
+    private DateTime MasterTournamentDate = DateTime.Now.Date;
 
-    // ----------------------------------------------------
-    // HOHE LIMITS FÜR DEN ENTERPRISE-IMPORT
-    // ----------------------------------------------------
     private const int MAX_FILE_COUNT = 200; 
     private const long MAX_FILE_SIZE = 50 * 1024 * 1024; 
-    // ----------------------------------------------------
 
     protected override async Task OnInitializedAsync()
     {
-        int currentYear = DateTime.Now.Year;
-        int startYear = Math.Min(2023, currentYear - 3); 
-        for (int y = startYear; y <= currentYear + 1; y++) ImportSeasons.Add($"{y}/{y + 1}");
-        int currentSeasonStart = DateTime.Now.Month >= 9 ? currentYear : currentYear - 1;
-        SelectedImportSeason = $"{currentSeasonStart}/{currentSeasonStart + 1}";
-
         using var db = await DbFactory.CreateDbContextAsync();
         await db.Database.EnsureCreatedAsync(); 
-
         bool isDbEmpty = !await db.Tournaments.AnyAsync() && !await db.Players.AnyAsync();
-        
-        if (isDbEmpty)
-        {
-            IsAutoLoading = true;
-            await LoadFromBrowserCache(silent: true);
-            IsAutoLoading = false;
-        }
+        if (isDbEmpty) { IsAutoLoading = true; await LoadFromBrowserCache(silent: true); IsAutoLoading = false; }
     }
 
     // --- 1. BROWSER / DATEI BACKUP ---
-
     private async Task SaveToBrowserCache() { try { ErrorMessage = ""; SuccessMessage = ""; var base64Db = await DbManager.GetDatabaseAsBase64Async(); if (string.IsNullOrEmpty(base64Db)) { ErrorMessage = "Datenbank ist leer."; return; } await JS.InvokeVoidAsync("window.browserStorage.saveDb", base64Db); SuccessMessage = "Datenbank erfolgreich im Browser-Cache gesichert!"; } catch (Exception ex) { ErrorMessage = "Speichern fehlgeschlagen: " + ex.Message; } }
     private async Task LoadFromBrowserCache(bool silent) { try { if (!silent) { ErrorMessage = ""; SuccessMessage = ""; } var base64Db = await JS.InvokeAsync<string>("window.browserStorage.loadDb"); if (string.IsNullOrEmpty(base64Db)) { if (!silent) ErrorMessage = "Kein Backup im Cache gefunden."; return; } using var memoryStream = new MemoryStream(Convert.FromBase64String(base64Db)); await DbManager.ImportDatabase(memoryStream); if (!silent) SuccessMessage = "Datenbank sofort live aus dem Browser-Cache geladen!"; else SuccessMessage = "Daten beim Start automatisch aus dem Cache wiederhergestellt."; StateHasChanged(); } catch (Exception ex) { if (!silent) ErrorMessage = "Laden fehlgeschlagen: " + ex.Message; } }
     private async Task DeleteBrowserCache() { try { await JS.InvokeVoidAsync("window.browserStorage.deleteDb"); SuccessMessage = "Der Browser-Cache wurde erfolgreich gelöscht."; StateHasChanged(); } catch (Exception ex) { ErrorMessage = "Löschen fehlgeschlagen: " + ex.Message; } }
     private async Task LoadDbFromFile(InputFileChangeEventArgs e) { try { ErrorMessage = ""; SuccessMessage = ""; using var stream = e.File.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); await DbManager.ImportDatabase(stream); SuccessMessage = "Datenbank live aus Datei geladen!"; StateHasChanged(); } catch (Exception ex) { ErrorMessage = "Datei-Import fehlgeschlagen: " + ex.Message; } }
     private async Task SaveDbToFile() => await DbManager.DownloadDatabase();
 
+    // --- SMART-MERGE HILFSMETHODEN ---
+    private async Task<Club?> GetOrMergeClub(ChessDbContext db, List<Club> existingClubs, Player p) { if (p.Club == null || string.IsNullOrWhiteSpace(p.Club.Name)) return null; string importedClubName = p.Club.Name.Trim(); var dbClub = existingClubs.FirstOrDefault(c => c.Name.Equals(importedClubName, StringComparison.OrdinalIgnoreCase) || (importedClubName.Length >= 4 && c.Name.Length >= 4 && (c.Name.Contains(importedClubName, StringComparison.OrdinalIgnoreCase) || importedClubName.Contains(c.Name, StringComparison.OrdinalIgnoreCase)))); if (dbClub == null) { dbClub = new Club { Name = importedClubName }; db.Clubs.Add(dbClub); await db.SaveChangesAsync(); existingClubs.Add(dbClub); } else { if (importedClubName.Length > dbClub.Name.Length) { dbClub.Name = importedClubName; db.Clubs.Update(dbClub); await db.SaveChangesAsync(); } } return dbClub; }
+    private async Task<(Player, bool, bool)> GetOrMergePlayer(ChessDbContext db, List<Player> existingPlayers, Player importedPlayer, int? clubId) { bool isNew = false; bool isUpdated = false; var dbPlayer = existingPlayers.FirstOrDefault(dbP => dbP.Firstname.Equals(importedPlayer.Firstname, StringComparison.OrdinalIgnoreCase) && dbP.Lastname.Equals(importedPlayer.Lastname, StringComparison.OrdinalIgnoreCase)); if (dbPlayer == null) { importedPlayer.Club = null; importedPlayer.ClubId = clubId; db.Players.Add(importedPlayer); await db.SaveChangesAsync(); existingPlayers.Add(importedPlayer); isNew = true; return (importedPlayer, isNew, isUpdated); } else { bool changed = false; if (dbPlayer.ClubId == null && clubId != null) { dbPlayer.ClubId = clubId; changed = true; } if (importedPlayer.Elo.HasValue && dbPlayer.Elo != importedPlayer.Elo) { dbPlayer.Elo = importedPlayer.Elo; changed = true; } if (!dbPlayer.BirthYear.HasValue && importedPlayer.BirthYear.HasValue) { dbPlayer.BirthYear = importedPlayer.BirthYear; changed = true; } if (string.IsNullOrWhiteSpace(dbPlayer.AgeGroup) && !string.IsNullOrWhiteSpace(importedPlayer.AgeGroup)) { dbPlayer.AgeGroup = importedPlayer.AgeGroup; changed = true; } if (changed) { db.Players.Update(dbPlayer); await db.SaveChangesAsync(); isUpdated = true; } return (dbPlayer, isNew, isUpdated); } }
 
-    // --- HILFSMETHODEN FÜR SMART-MERGE LOGIK ---
-    // Diese Logik prüft Verein-Duplikate ("Schwanenstadt" vs "SC Schwanenstadt") und Spieler-Updates
-
-    private async Task<Club?> GetOrMergeClub(ChessDbContext db, List<Club> existingClubs, Player p)
-    {
-        if (p.Club == null || string.IsNullOrWhiteSpace(p.Club.Name)) return null;
-
-        string importedClubName = p.Club.Name.Trim();
-
-        // SMART-MERGE VEREIN: Prüfe auf exakten Namen ODER ob der Name im anderen enthalten ist (z.B. "Schwanenstadt" in "Sc Schwanenstadt")
-        var dbClub = existingClubs.FirstOrDefault(c => 
-            c.Name.Equals(importedClubName, StringComparison.OrdinalIgnoreCase) || 
-            (importedClubName.Length >= 4 && c.Name.Length >= 4 && 
-            (c.Name.Contains(importedClubName, StringComparison.OrdinalIgnoreCase) || importedClubName.Contains(c.Name, StringComparison.OrdinalIgnoreCase)))
-        );
-
-        if (dbClub == null)
-        {
-            // Verein existiert gar nicht -> Neu anlegen
-            dbClub = new Club { Name = importedClubName };
-            db.Clubs.Add(dbClub);
-            await db.SaveChangesAsync();
-            existingClubs.Add(dbClub);
-        }
-        else
-        {
-            // Verein existiert in ähnlicher Form. Wenn der importierte Name LÄNGER und Detaillierter ist, updaten wir den bestehenden Verein!
-            if (importedClubName.Length > dbClub.Name.Length)
-            {
-                dbClub.Name = importedClubName;
-                db.Clubs.Update(dbClub);
-                await db.SaveChangesAsync();
-            }
-        }
-
-        return dbClub;
-    }
-
-    private async Task<(Player, bool, bool)> GetOrMergePlayer(ChessDbContext db, List<Player> existingPlayers, Player importedPlayer, int? clubId)
-    {
-        bool isNew = false;
-        bool isUpdated = false;
-
-        var dbPlayer = existingPlayers.FirstOrDefault(dbP => 
-            dbP.Firstname.Equals(importedPlayer.Firstname, StringComparison.OrdinalIgnoreCase) && 
-            dbP.Lastname.Equals(importedPlayer.Lastname, StringComparison.OrdinalIgnoreCase));
-
-        if (dbPlayer == null)
-        {
-            // Spieler existiert noch gar nicht -> Neu anlegen
-            importedPlayer.Club = null; // Verhindert EF Core Relationen-Fehler
-            importedPlayer.ClubId = clubId;
-            db.Players.Add(importedPlayer);
-            await db.SaveChangesAsync();
-            existingPlayers.Add(importedPlayer);
-            isNew = true;
-            return (importedPlayer, isNew, isUpdated);
-        }
-        else
-        {
-            // SMART-MERGE SPIELER: Spieler existiert. Wir füllen leere Felder auf!
-            bool changed = false;
-
-            // Hatte der Spieler bisher keinen Verein? Dann den neuen übernehmen.
-            if (dbPlayer.ClubId == null && clubId != null) 
-            { 
-                dbPlayer.ClubId = clubId; 
-                changed = true; 
-            }
-
-            // Gab es noch keine Elo oder hat sich die Elo geändert?
-            if (importedPlayer.Elo.HasValue && dbPlayer.Elo != importedPlayer.Elo) 
-            { 
-                dbPlayer.Elo = importedPlayer.Elo; 
-                changed = true; 
-            }
-
-            // Fehlte das Geburtsjahr?
-            if (!dbPlayer.BirthYear.HasValue && importedPlayer.BirthYear.HasValue) 
-            { 
-                dbPlayer.BirthYear = importedPlayer.BirthYear; 
-                changed = true; 
-            }
-
-            // Fehlte die Altersklasse?
-            if (string.IsNullOrWhiteSpace(dbPlayer.AgeGroup) && !string.IsNullOrWhiteSpace(importedPlayer.AgeGroup)) 
-            { 
-                dbPlayer.AgeGroup = importedPlayer.AgeGroup; 
-                changed = true; 
-            }
-
-            if (changed) 
-            { 
-                db.Players.Update(dbPlayer); 
-                await db.SaveChangesAsync(); 
-                isUpdated = true;
-            }
-
-            return (dbPlayer, isNew, isUpdated);
-        }
-    }
-
-
-    // --- 2. BATCH TURNIER IMPORT ---
-
+    // --- 2. NEU: EVENT IMPORT (TURNIERGRUPPE) ---
     private async Task ImportMultipleExcel(InputFileChangeEventArgs e)
     {
         ErrorMessage = ""; SuccessMessage = "";
         PendingImports.Clear();
 
-        foreach (var file in e.GetMultipleFiles(maximumFileCount: MAX_FILE_COUNT))
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles: MAX_FILE_COUNT))
         {
             try 
             {
@@ -307,96 +172,79 @@
                 memoryStream.Position = 0;
 
                 var players = ExcelService.ReadExcelStream(memoryStream);
-                if (players != null && players.Any()) PendingImports.Add(new PendingImport { FileName = file.Name, TournamentName = Path.GetFileNameWithoutExtension(file.Name), Players = players });
+                if (players != null && players.Any()) PendingImports.Add(new PendingImport { FileName = file.Name, Players = players });
             }
             catch (Exception ex) { ErrorMessage += $"Fehler bei Datei {file.Name}: {ex.Message} "; }
         }
+
+        // Setzt einen Standard-Namen vor
+        if (PendingImports.Any() && string.IsNullOrWhiteSpace(MasterTournamentName))
+        {
+            MasterTournamentName = "Runde XY - Event";
+        }
     }
 
-    private async Task SaveAllToDatabase()
+    private async Task SaveAllAsOneTournament()
     {
-        if (!PendingImports.Any() || string.IsNullOrWhiteSpace(SelectedImportSeason)) return;
+        if (!PendingImports.Any() || string.IsNullOrWhiteSpace(MasterTournamentName)) return;
         IsProcessing = true; StateHasChanged();
-        using var db = await DbFactory.CreateDbContextAsync(); await db.Database.EnsureCreatedAsync();
+        
+        using var db = await DbFactory.CreateDbContextAsync(); 
+        await db.Database.EnsureCreatedAsync();
 
-        int seasonStartYear = int.Parse(SelectedImportSeason.Split('/')[0]);
-        int dayOffset = 1;
+        // SCHRITT 1: ERSTELLE GENAU EIN TURNIER (DAS GESAMTEVENT)
+        var masterTournament = new Tournament { Name = MasterTournamentName, Date = MasterTournamentDate };
+        db.Tournaments.Add(masterTournament);
+        await db.SaveChangesAsync(); // Damit wir die Master-ID bekommen
 
+        var existingClubs = await db.Clubs.ToListAsync();
+        var existingPlayers = await db.Players.ToListAsync();
+
+        int totalPlayersMerged = 0;
+
+        // SCHRITT 2: FÜGE ALLE SPIELER AUS ALLEN DATEIEN DIESEM EINEN TURNIER HINZU
         foreach (var import in PendingImports)
         {
-            DateTime tournamentDate = new DateTime(seasonStartYear, 10, 1).AddDays(dayOffset - 1); dayOffset++;
-            var tournament = new Tournament { Name = import.TournamentName, Date = tournamentDate };
-            db.Tournaments.Add(tournament); await db.SaveChangesAsync();
-
-            var existingClubs = await db.Clubs.ToListAsync();
-            var existingPlayers = await db.Players.ToListAsync();
-
             foreach (var importedPlayer in import.Players)
             {
-                // Nutzt die neue Smart-Merge Logik
+                // Smart Merge für Spieler und Verein
                 var dbClub = await GetOrMergeClub(db, existingClubs, importedPlayer);
                 var (dbPlayer, _, _) = await GetOrMergePlayer(db, existingPlayers, importedPlayer, dbClub?.ClubId);
 
-                // Ergebnis speichern
-                double calculatedPoints = Math.Max(10, 21 - importedPlayer.TournamentRank);
-                db.PlayerTournaments.Add(new PlayerTournament { TournamentId = tournament.TournamentId, PlayerId = dbPlayer.PlayerId, Points = calculatedPoints, Rank = importedPlayer.TournamentRank });
-            }
-            await db.SaveChangesAsync();
-        }
+                // Checken, ob der Spieler in diesem Master-Turnier schon drin ist (Verhindert doppelte Einträge, falls ein Kind 2x eingereicht wurde)
+                bool alreadyInTournament = await db.PlayerTournaments.AnyAsync(pt => pt.TournamentId == masterTournament.TournamentId && pt.PlayerId == dbPlayer.PlayerId);
 
-        int count = PendingImports.Count; PendingImports.Clear(); IsProcessing = false;
-        SuccessMessage = $"{count} Turniere wurden erfolgreich in die Saison {SelectedImportSeason} importiert (inkl. intelligenter Datenzusammenführung)!";
+                if (!alreadyInTournament)
+                {
+                    double calculatedPoints = Math.Max(10, 21 - importedPlayer.TournamentRank);
+                    db.PlayerTournaments.Add(new PlayerTournament { TournamentId = masterTournament.TournamentId, PlayerId = dbPlayer.PlayerId, Points = calculatedPoints, Rank = importedPlayer.TournamentRank });
+                    totalPlayersMerged++;
+                }
+            }
+        }
+        await db.SaveChangesAsync();
+
+        int fileCount = PendingImports.Count; 
+        PendingImports.Clear(); MasterTournamentName = ""; IsProcessing = false;
+        SuccessMessage = $"Das Event wurde erfolgreich erstellt! {fileCount} Altersklassen-Dateien wurden zu einem Turnier zusammengefasst und {totalPlayersMerged} Teilnehmer gespeichert.";
     }
 
-    // --- 3. MULTI STAMMDATEN IMPORT (Ohne Turniere) ---
-
+    // --- 3. MULTI STAMMDATEN IMPORT ---
     private async Task ImportMultiplePlayersOnly(InputFileChangeEventArgs e)
     {
         try
         {
             ErrorMessage = ""; SuccessMessage = ""; IsProcessingPlayers = true; StateHasChanged();
-            
             var allExcelPlayers = new List<Player>();
-
-            foreach (var file in e.GetMultipleFiles(maximumFileCount: MAX_FILE_COUNT))
-            {
-                try 
-                {
-                    using var stream = file.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE);
-                    var memoryStream = new MemoryStream();
-                    await stream.CopyToAsync(memoryStream);
-                    memoryStream.Position = 0;
-
-                    var filePlayers = ExcelService.ReadExcelStream(memoryStream);
-                    if (filePlayers != null) allExcelPlayers.AddRange(filePlayers);
-                }
-                catch (Exception ex) { ErrorMessage += $"Fehler bei Datei {file.Name}: {ex.Message} "; }
-            }
-
-            if (!allExcelPlayers.Any()) { ErrorMessage += "Keine Spieler in den Dateien gefunden."; IsProcessingPlayers = false; return; }
-
-            using var db = await DbFactory.CreateDbContextAsync();
-            await db.Database.EnsureCreatedAsync();
-
-            var existingClubs = await db.Clubs.ToListAsync();
-            var existingPlayers = await db.Players.ToListAsync();
-
-            int newPlayersCount = 0;
-            int updatedPlayersCount = 0;
-
-            foreach (var importedPlayer in allExcelPlayers)
-            {
-                // Nutzt exakt dieselbe Smart-Merge Logik wie die Turniere!
-                var dbClub = await GetOrMergeClub(db, existingClubs, importedPlayer);
-                var (dbPlayer, isNew, isUpdated) = await GetOrMergePlayer(db, existingPlayers, importedPlayer, dbClub?.ClubId);
-
-                if (isNew) newPlayersCount++;
-                if (isUpdated) updatedPlayersCount++;
-            }
-
-            SuccessMessage = $"Stammdaten-Update erfolgreich (aus {e.FileCount} Dateien): {newPlayersCount} Spieler neu angelegt, {updatedPlayersCount} bestehende Spieler um neue Infos (Verein, Elo, etc.) ergänzt.";
+            foreach (var file in e.GetMultipleFiles(maxAllowedFiles: MAX_FILE_COUNT)) { try { using var stream = file.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); var memoryStream = new MemoryStream(); await stream.CopyToAsync(memoryStream); memoryStream.Position = 0; var filePlayers = ExcelService.ReadExcelStream(memoryStream); if (filePlayers != null) allExcelPlayers.AddRange(filePlayers); } catch (Exception ex) { ErrorMessage += $"Fehler bei {file.Name}: {ex.Message} "; } }
+            if (!allExcelPlayers.Any()) { ErrorMessage += "Keine Spieler gefunden."; IsProcessingPlayers = false; return; }
+            using var db = await DbFactory.CreateDbContextAsync(); await db.Database.EnsureCreatedAsync();
+            var existingClubs = await db.Clubs.ToListAsync(); var existingPlayers = await db.Players.ToListAsync();
+            int newPlayersCount = 0; int updatedPlayersCount = 0;
+            foreach (var importedPlayer in allExcelPlayers) { var dbClub = await GetOrMergeClub(db, existingClubs, importedPlayer); var (dbPlayer, isNew, isUpdated) = await GetOrMergePlayer(db, existingPlayers, importedPlayer, dbClub?.ClubId); if (isNew) newPlayersCount++; if (isUpdated) updatedPlayersCount++; }
+            SuccessMessage = $"Stammdaten-Update erfolgreich (aus {e.FileCount} Dateien): {newPlayersCount} neue Spieler, {updatedPlayersCount} Updates.";
         }
-        catch (Exception ex) { ErrorMessage = "Fehler beim Spieler-Import: " + ex.Message; }
+        catch (Exception ex) { ErrorMessage = "Fehler: " + ex.Message; }
         finally { IsProcessingPlayers = false; StateHasChanged(); }
     }
 }
