@@ -5,57 +5,42 @@
 
 <div class="d-flex" style="min-height: 100vh;">
 
-    <aside
-        class="sidebar bg-dark text-white d-print-none d-flex flex-column shadow-lg @(collapseNavMenu ? "d-none d-md-flex" : "d-flex")"
-        style="width: 260px; z-index: 1000; transition: all 0.3s;">
-
-        <a href="" class="text-decoration-none text-white d-flex align-items-center px-4 py-3"
-            style="height: 70px; background-color: rgba(0,0,0,0.15);">
+    <aside class="sidebar bg-dark text-white d-print-none d-flex flex-column shadow-lg @(collapseNavMenu ? "d-none d-md-flex" : "d-flex")" style="width: 260px; z-index: 1000; transition: all 0.3s;">
+        
+        <a href="" class="text-decoration-none text-white d-flex align-items-center px-4 py-3" style="height: 70px; background-color: rgba(0,0,0,0.15);">
             <i class="bi bi-grid-1x2-fill text-primary fs-4 me-2"></i>
-            <span class="fs-5 fw-bold tracking-wide">Schülerliga OÖ</span>
+            <span class="fs-5 fw-bold tracking-wide" style="font-size: 1.15rem !important;">Schülerligaverwaltung</span>
         </a>
 
         <nav class="flex-grow-1 px-3 py-4">
             <span class="text-uppercase fw-bold text-muted small px-3 mb-2 d-block">System</span>
-            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href=""
-                Match="NavLinkMatch.All"><i class="bi bi-cloud-arrow-up fs-5 me-3"></i><span class="fw-semibold">Import
-                    & Daten</span></NavLink>
+            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href="" Match="NavLinkMatch.All"><i class="bi bi-cloud-arrow-up fs-5 me-3"></i><span class="fw-semibold">Import & Daten</span></NavLink>
 
             <span class="text-uppercase fw-bold text-muted small px-3 mt-4 mb-2 d-block">Stammdaten & Events</span>
-            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href="spieler"><i
-                    class="bi bi-people fs-5 me-3"></i><span class="fw-semibold">Spieler</span></NavLink>
-            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href="vereine"><i
-                    class="bi bi-buildings fs-5 me-3"></i><span class="fw-semibold">Vereine</span></NavLink>
-            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href="turniere">
-                <i class="bi bi-trophy fs-5 me-3"></i><span class="fw-semibold">Turniere & Ergebnisse</span></NavLink>
+            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href="spieler"><i class="bi bi-people fs-5 me-3"></i><span class="fw-semibold">Spieler</span></NavLink>
+            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href="vereine"><i class="bi bi-buildings fs-5 me-3"></i><span class="fw-semibold">Vereine</span></NavLink>
+            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href="turniere"><i class="bi bi-trophy fs-5 me-3"></i><span class="fw-semibold">Turniere & Ergebnisse</span></NavLink>
 
             <span class="text-uppercase fw-bold text-muted small px-3 mt-4 mb-2 d-block">Reporting</span>
-            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3"
-                href="auswertung"><i class="bi bi-pie-chart fs-5 me-3"></i><span class="fw-semibold">Analytics</span>
-            </NavLink>
+            <NavLink class="nav-link text-white-50 px-3 py-2 mb-1 d-flex align-items-center rounded-3" href="auswertung"><i class="bi bi-pie-chart fs-5 me-3"></i><span class="fw-semibold">Analytics</span></NavLink>
         </nav>
 
         <div class="p-3 border-top border-secondary border-opacity-25 text-center bg-dark">
             <div class="mb-2"><span class="animated-chess-piece">♞</span></div>
-            <div class="fw-bold small lh-1 text-white">Version 1.2 Enterprise</div>
-            <div class="text-white-50" style="font-size: 0.75rem;">© 2025 by Schachkreis Mitte</div>
+            <div class="fw-bold small lh-1 text-white">Version 1.3</div>
+            <div class="text-white-50 mt-1" style="font-size: 0.75rem;">© 2025 by Matthias</div>
         </div>
     </aside>
 
     <div class="flex-grow-1 d-flex flex-column bg-light" style="min-width: 0;">
-        <header
-            class="bg-white border-bottom shadow-sm d-print-none d-flex align-items-center justify-content-between px-4"
-            style="height: 70px;">
+        <header class="bg-white border-bottom shadow-sm d-print-none d-flex align-items-center justify-content-between px-4" style="height: 70px;">
             <div class="d-flex align-items-center">
-                <button class="btn btn-light d-md-none me-2" @onclick="ToggleNavMenu"><i
-                        class="bi bi-list fs-4"></i></button>
-                <span class="text-muted fw-semibold d-none d-md-block"><i class="bi bi-broadcast text-success me-1"></i>
-                    Offizielles System</span>
+                <button class="btn btn-light d-md-none me-2" @onclick="ToggleNavMenu"><i class="bi bi-list fs-4"></i></button>
+                <span class="text-muted fw-semibold d-none d-md-block"><i class="bi bi-broadcast text-success me-1"></i> Lokales System aktiv</span>
             </div>
-
+            
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary shadow-sm fw-bold d-flex align-items-center"
-                    @onclick="QuickBackup" title="Datenbank sofort auf PC sichern">
+                <button class="btn btn-sm btn-outline-primary shadow-sm fw-bold d-flex align-items-center" @onclick="QuickBackup" title="Datenbank sofort auf PC sichern">
                     <i class="bi bi-download me-1"></i> Quick-Backup
                 </button>
             </div>
@@ -68,16 +53,8 @@
 </div>
 
 <style>
-    .sidebar .nav-link:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #ffffff !important;
-    }
-
-    .sidebar .nav-link.active {
-        background-color: #0d6efd !important;
-        color: #ffffff !important;
-        box-shadow: 0 4px 6px -1px rgba(13, 110, 253, 0.4);
-    }
+    .sidebar .nav-link:hover { background-color: rgba(255, 255, 255, 0.1); color: #ffffff !important; }
+    .sidebar .nav-link.active { background-color: #0d6efd !important; color: #ffffff !important; box-shadow: 0 4px 6px -1px rgba(13, 110, 253, 0.4); }
 </style>
 
 @code {
