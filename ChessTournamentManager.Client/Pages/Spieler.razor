@@ -40,9 +40,17 @@
                         {
                             <tr>
                                 <td class="ps-4 fw-bold text-dark">@player.Lastname <span class="fw-normal text-muted">@player.Firstname</span></td>
-                                <td class="text-muted">@player.Club?.Name</td>
-                                <td>@player.Elo</td>
-                                <td class="text-center"><span class="badge bg-light text-dark border">@player.AgeGroup</span></td>
+                                <td class="text-muted">@(player.Club?.Name ?? "-")</td>
+                                <td>@(player.Elo?.ToString() ?? "-")</td>
+                                <td class="text-center">
+                                    @if (!string.IsNullOrWhiteSpace(player.AgeGroup))
+                                    {
+                                        <span class="badge bg-light text-dark border" title="@(player.BirthYear.HasValue ? $"Geburtsjahr: {player.BirthYear}" : "Manuell zugewiesene Klasse")">
+                                            @player.AgeGroup 
+                                            @(player.BirthYear.HasValue ? " (Auto)" : " (Manuell)")
+                                        </span>
+                                    }
+                                </td>
                                 <td class="text-center">
                                     @if (player.PlayerTournaments != null && player.PlayerTournaments.Any()) { <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenTournamentListModal(player)"><i class="bi bi-bar-chart-fill me-1"></i> @player.PlayerTournaments.Count </button> }
                                     else { <span class="text-muted">-</span> }
@@ -108,17 +116,41 @@
     <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow">
-                <div class="modal-header"><h5 class="modal-title fw-bold">@(EditingPlayer.PlayerId == 0 ? "Neuen Spieler anlegen" : "Spieler bearbeiten")</h5><button type="button" class="btn-close" @onclick="CloseModals"></button></div>
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">@(EditingPlayer.PlayerId == 0 ? "Neuen Spieler anlegen" : "Spieler bearbeiten")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-md-6"><label class="form-label text-muted small">Vorname</label><input type="text" class="form-control" @bind="EditingPlayer.Firstname" /></div>
-                        <div class="col-md-6"><label class="form-label text-muted small">Nachname</label><input type="text" class="form-control" @bind="EditingPlayer.Lastname" /></div>
-                        <div class="col-md-6"><label class="form-label text-muted small">Elo</label><input type="number" class="form-control" @bind="EditingPlayer.Elo" /></div>
-                        <div class="col-md-6"><label class="form-label text-muted small">Verein</label><select class="form-select" @bind="EditingPlayer.ClubId"><option value="">-- Kein Verein --</option>@if (AllClubs != null) { foreach (var club in AllClubs) { <option value="@club.ClubId">@club.Name</option> } }</select></div>
-                        <div class="col-md-6"><label class="form-label text-muted small">Geburtsjahr</label><input type="number" class="form-control" @bind="EditingPlayer.BirthYear" /></div>
+                        <div class="col-md-6"><label class="form-label text-muted small fw-bold">Vorname</label><input type="text" class="form-control" @bind="EditingPlayer.Firstname" /></div>
+                        <div class="col-md-6"><label class="form-label text-muted small fw-bold">Nachname</label><input type="text" class="form-control" @bind="EditingPlayer.Lastname" /></div>
+                        <div class="col-md-6"><label class="form-label text-muted small fw-bold">Elo-Zahl</label><input type="number" class="form-control" @bind="EditingPlayer.Elo" /></div>
+                        <div class="col-md-6"><label class="form-label text-muted small fw-bold">Verein</label><select class="form-select" @bind="EditingPlayer.ClubId"><option value="">-- Kein Verein --</option>@if (AllClubs != null) { foreach (var club in AllClubs) { <option value="@club.ClubId">@club.Name</option> } }</select></div>
+                        
+                        <div class="col-12"><hr class="my-2" /></div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold">1. Geburtsjahr (Automatische U-Klasse)</label>
+                            <input type="number" class="form-control" @bind="EditingPlayer.BirthYear" placeholder="z.B. 2012" />
+                            <span class="text-muted d-block mt-1" style="font-size: 0.75rem;">Berechnet die Klasse automatisch basierend auf dem aktuellen Schuljahr. Überschreibt manuelle Eingaben.</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold">2. Manuelle Klasse (falls Jahr unbekannt)</label>
+                            <select class="form-select" @bind="EditingPlayer.AgeGroup">
+                                <option value="">-- Keine Klasse --</option>
+                                <option value="U8">U8</option>
+                                <option value="U10">U10</option>
+                                <option value="U12">U12</option>
+                                <option value="U14">U14</option>
+                                <option value="U16">U16</option>
+                                <option value="U18">U18</option>
+                                <option value="Allgemein">Allgemein</option>
+                            </select>
+                            <span class="text-muted d-block mt-1" style="font-size: 0.75rem;">Wird nur verwendet, wenn <b>kein Geburtsjahr</b> eingetragen ist.</span>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0"><button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button><button class="btn btn-primary" @onclick="SavePlayer"><i class="bi bi-save me-1"></i> Speichern</button></div>
+                <div class="modal-footer border-top-0"><button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button><button class="btn btn-primary fw-bold" @onclick="SavePlayer"><i class="bi bi-save me-1"></i> Speichern</button></div>
             </div>
         </div>
     </div>
@@ -141,19 +173,57 @@
     
     private async Task OpenTournamentListModal(Player player) { SelectedPlayer = player; IsTournamentListModalOpen = true; StateHasChanged(); await Task.Delay(50); var chrono = SelectedPlayer.PlayerTournaments.OrderBy(pt => pt.Tournament?.Date).ToList(); await JS.InvokeVoidAsync("window.chartManager.renderLineChart", "playerLineChart", chrono.Select(pt => pt.Tournament?.Name ?? "").ToArray(), chrono.Select(pt => pt.Points).ToArray()); }
     
-    // --- GITHUB PAGES FIX: KEIN "/" AM ANFANG ---
-    private void NavigateToTournament(int tournamentId)
-    {
-        NavManager.NavigateTo($"turniere?openTournamentId={tournamentId}");
-    }
+    private void NavigateToTournament(int tournamentId) { NavManager.NavigateTo($"turniere?openTournamentId={tournamentId}"); }
 
     private void OpenAddModal() { EditingPlayer = new Player(); IsEditModalOpen = true; }
     private void OpenEditModal(Player player) { EditingPlayer = new Player { PlayerId = player.PlayerId, Firstname = player.Firstname, Lastname = player.Lastname, Country = player.Country, Elo = player.Elo, ClubId = player.ClubId, BirthYear = player.BirthYear, AgeGroup = player.AgeGroup }; IsEditModalOpen = true; }
     private void OpenDeleteModal(Player player) { PlayerToDelete = player; IsDeleteModalOpen = true; }
-    
-    // --- GITHUB PAGES FIX ---
     private void CloseModals() { IsEditModalOpen = false; IsDeleteModalOpen = false; IsTournamentListModalOpen = false; EditingPlayer = null; PlayerToDelete = null; SelectedPlayer = null; if (EditPlayerId.HasValue) NavManager.NavigateTo("spieler", false); }
 
-    private async Task SavePlayer() { if (EditingPlayer == null) return; using var db = await DbFactory.CreateDbContextAsync(); EditingPlayer.AgeGroup = EditingPlayer.BirthYear.HasValue ? (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 8 ? "U8" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 10 ? "U10" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 12 ? "U12" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 14 ? "U14" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 16 ? "U16" : (DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1) - EditingPlayer.BirthYear.Value <= 18 ? "U18" : "Allgemein" : ""; if (EditingPlayer.PlayerId == 0) db.Players.Add(EditingPlayer); else { var dbP = await db.Players.FindAsync(EditingPlayer.PlayerId); if (dbP != null) { dbP.Firstname = EditingPlayer.Firstname; dbP.Lastname = EditingPlayer.Lastname; dbP.Elo = EditingPlayer.Elo; dbP.ClubId = EditingPlayer.ClubId; dbP.BirthYear = EditingPlayer.BirthYear; dbP.AgeGroup = EditingPlayer.AgeGroup; db.Players.Update(dbP); } } await db.SaveChangesAsync(); await LoadData(); CloseModals(); }
+    // --- DIE NEUE SICHERE SPEICHER-LOGIK FÜR ALTERS-KLASSEN ---
+    private async Task SavePlayer() 
+    { 
+        if (EditingPlayer == null) return; 
+
+        // 1. Wenn ein Geburtsjahr vorhanden ist, ÜBERSCHREIBT das System die Altersklasse automatisch (1. September Stichtag)
+        if (EditingPlayer.BirthYear.HasValue)
+        {
+            int currentSeasonStartYear = DateTime.Now.Month >= 9 ? DateTime.Now.Year : DateTime.Now.Year - 1;
+            int age = currentSeasonStartYear - EditingPlayer.BirthYear.Value;
+
+            if (age <= 8) EditingPlayer.AgeGroup = "U8";
+            else if (age <= 10) EditingPlayer.AgeGroup = "U10";
+            else if (age <= 12) EditingPlayer.AgeGroup = "U12";
+            else if (age <= 14) EditingPlayer.AgeGroup = "U14";
+            else if (age <= 16) EditingPlayer.AgeGroup = "U16";
+            else if (age <= 18) EditingPlayer.AgeGroup = "U18";
+            else EditingPlayer.AgeGroup = "Allgemein";
+        }
+        // 2. Wenn KEIN Geburtsjahr da ist, wird der Wert aus dem Dropdown einfach so übernommen.
+
+        using var db = await DbFactory.CreateDbContextAsync(); 
+        if (EditingPlayer.PlayerId == 0) 
+        {
+            db.Players.Add(EditingPlayer); 
+        }
+        else 
+        { 
+            var dbP = await db.Players.FindAsync(EditingPlayer.PlayerId); 
+            if (dbP != null) 
+            { 
+                dbP.Firstname = EditingPlayer.Firstname; 
+                dbP.Lastname = EditingPlayer.Lastname; 
+                dbP.Elo = EditingPlayer.Elo; 
+                dbP.ClubId = EditingPlayer.ClubId; 
+                dbP.BirthYear = EditingPlayer.BirthYear; 
+                dbP.AgeGroup = EditingPlayer.AgeGroup; 
+                db.Players.Update(dbP); 
+            } 
+        } 
+        await db.SaveChangesAsync(); 
+        await LoadData(); 
+        CloseModals(); 
+    }
+
     private async Task DeletePlayer() { if (PlayerToDelete == null) return; using var db = await DbFactory.CreateDbContextAsync(); var dbP = await db.Players.FindAsync(PlayerToDelete.PlayerId); if (dbP != null) { db.Players.Remove(dbP); await db.SaveChangesAsync(); } await LoadData(); CloseModals(); }
 }
