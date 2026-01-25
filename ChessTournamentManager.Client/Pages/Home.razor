@@ -86,7 +86,14 @@
                             <div class="list-group mb-3" style="max-height: 100px; overflow-y: auto;">
                                 @foreach (var import in PendingImports)
                                 {
-                                    <div class="list-group-item p-2 text-muted small"><i class="bi bi-file-earmark-excel text-success me-1"></i> @import.FileName <span class="float-end badge bg-secondary">@import.Players.Count Spieler</span></div>
+                                    <div class="list-group-item p-2 text-muted small">
+                                        <i class="bi bi-file-earmark-excel text-success me-1"></i> @import.FileName 
+                                        @if (!string.IsNullOrWhiteSpace(ExtractAgeGroupFromFilename(import.FileName)))
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">@ExtractAgeGroupFromFilename(import.FileName)</span>
+                                        }
+                                        <span class="float-end badge bg-secondary">@import.Players.Count Spieler</span>
+                                    </div>
                                 }
                             </div>
 
@@ -130,7 +137,6 @@
     private string ErrorMessage = ""; 
     private bool IsAutoLoading = false;
 
-    // NEU: Nur noch 1 Name und 1 Datum für das gesamte Event
     private string MasterTournamentName = "";
     private DateTime MasterTournamentDate = DateTime.Now.Date;
 
@@ -152,11 +158,28 @@
     private async Task LoadDbFromFile(InputFileChangeEventArgs e) { try { ErrorMessage = ""; SuccessMessage = ""; using var stream = e.File.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); await DbManager.ImportDatabase(stream); SuccessMessage = "Datenbank live aus Datei geladen!"; StateHasChanged(); } catch (Exception ex) { ErrorMessage = "Datei-Import fehlgeschlagen: " + ex.Message; } }
     private async Task SaveDbToFile() => await DbManager.DownloadDatabase();
 
+    // --- NEUE FUNKTION: ERKENNT U-KLASSE IM DATEINAMEN ---
+    private string? ExtractAgeGroupFromFilename(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)) return null;
+        var upperName = fileName.ToUpper();
+        
+        // Die Reihenfolge hier ist eigentlich egal, er schaut einfach ob das Wort darin vorkommt
+        if (upperName.Contains("U8")) return "U8";
+        if (upperName.Contains("U10")) return "U10";
+        if (upperName.Contains("U12")) return "U12";
+        if (upperName.Contains("U14")) return "U14";
+        if (upperName.Contains("U16")) return "U16";
+        if (upperName.Contains("U18")) return "U18";
+        
+        return null;
+    }
+
     // --- SMART-MERGE HILFSMETHODEN ---
     private async Task<Club?> GetOrMergeClub(ChessDbContext db, List<Club> existingClubs, Player p) { if (p.Club == null || string.IsNullOrWhiteSpace(p.Club.Name)) return null; string importedClubName = p.Club.Name.Trim(); var dbClub = existingClubs.FirstOrDefault(c => c.Name.Equals(importedClubName, StringComparison.OrdinalIgnoreCase) || (importedClubName.Length >= 4 && c.Name.Length >= 4 && (c.Name.Contains(importedClubName, StringComparison.OrdinalIgnoreCase) || importedClubName.Contains(c.Name, StringComparison.OrdinalIgnoreCase)))); if (dbClub == null) { dbClub = new Club { Name = importedClubName }; db.Clubs.Add(dbClub); await db.SaveChangesAsync(); existingClubs.Add(dbClub); } else { if (importedClubName.Length > dbClub.Name.Length) { dbClub.Name = importedClubName; db.Clubs.Update(dbClub); await db.SaveChangesAsync(); } } return dbClub; }
     private async Task<(Player, bool, bool)> GetOrMergePlayer(ChessDbContext db, List<Player> existingPlayers, Player importedPlayer, int? clubId) { bool isNew = false; bool isUpdated = false; var dbPlayer = existingPlayers.FirstOrDefault(dbP => dbP.Firstname.Equals(importedPlayer.Firstname, StringComparison.OrdinalIgnoreCase) && dbP.Lastname.Equals(importedPlayer.Lastname, StringComparison.OrdinalIgnoreCase)); if (dbPlayer == null) { importedPlayer.Club = null; importedPlayer.ClubId = clubId; db.Players.Add(importedPlayer); await db.SaveChangesAsync(); existingPlayers.Add(importedPlayer); isNew = true; return (importedPlayer, isNew, isUpdated); } else { bool changed = false; if (dbPlayer.ClubId == null && clubId != null) { dbPlayer.ClubId = clubId; changed = true; } if (importedPlayer.Elo.HasValue && dbPlayer.Elo != importedPlayer.Elo) { dbPlayer.Elo = importedPlayer.Elo; changed = true; } if (!dbPlayer.BirthYear.HasValue && importedPlayer.BirthYear.HasValue) { dbPlayer.BirthYear = importedPlayer.BirthYear; changed = true; } if (string.IsNullOrWhiteSpace(dbPlayer.AgeGroup) && !string.IsNullOrWhiteSpace(importedPlayer.AgeGroup)) { dbPlayer.AgeGroup = importedPlayer.AgeGroup; changed = true; } if (changed) { db.Players.Update(dbPlayer); await db.SaveChangesAsync(); isUpdated = true; } return (dbPlayer, isNew, isUpdated); } }
 
-    // --- 2. NEU: EVENT IMPORT (TURNIERGRUPPE) ---
+    // --- 2. EVENT IMPORT (TURNIERGRUPPE) ---
     private async Task ImportMultipleExcel(InputFileChangeEventArgs e)
     {
         ErrorMessage = ""; SuccessMessage = "";
@@ -172,12 +195,25 @@
                 memoryStream.Position = 0;
 
                 var players = ExcelService.ReadExcelStream(memoryStream);
-                if (players != null && players.Any()) PendingImports.Add(new PendingImport { FileName = file.Name, Players = players });
+                if (players != null && players.Any()) 
+                {
+                    // NEU: Trage für ALLE Spieler in dieser Datei die U-Klasse aus dem Dateinamen ein, 
+                    // falls in der Excel-Liste selbst keine eingetragen war.
+                    string? detectedAgeGroup = ExtractAgeGroupFromFilename(file.Name);
+                    if (!string.IsNullOrEmpty(detectedAgeGroup))
+                    {
+                        foreach(var p in players)
+                        {
+                            if (string.IsNullOrWhiteSpace(p.AgeGroup)) p.AgeGroup = detectedAgeGroup;
+                        }
+                    }
+
+                    PendingImports.Add(new PendingImport { FileName = file.Name, Players = players });
+                }
             }
             catch (Exception ex) { ErrorMessage += $"Fehler bei Datei {file.Name}: {ex.Message} "; }
         }
 
-        // Setzt einen Standard-Namen vor
         if (PendingImports.Any() && string.IsNullOrWhiteSpace(MasterTournamentName))
         {
             MasterTournamentName = "Runde XY - Event";
@@ -192,26 +228,22 @@
         using var db = await DbFactory.CreateDbContextAsync(); 
         await db.Database.EnsureCreatedAsync();
 
-        // SCHRITT 1: ERSTELLE GENAU EIN TURNIER (DAS GESAMTEVENT)
         var masterTournament = new Tournament { Name = MasterTournamentName, Date = MasterTournamentDate };
         db.Tournaments.Add(masterTournament);
-        await db.SaveChangesAsync(); // Damit wir die Master-ID bekommen
+        await db.SaveChangesAsync();
 
         var existingClubs = await db.Clubs.ToListAsync();
         var existingPlayers = await db.Players.ToListAsync();
 
         int totalPlayersMerged = 0;
 
-        // SCHRITT 2: FÜGE ALLE SPIELER AUS ALLEN DATEIEN DIESEM EINEN TURNIER HINZU
         foreach (var import in PendingImports)
         {
             foreach (var importedPlayer in import.Players)
             {
-                // Smart Merge für Spieler und Verein
                 var dbClub = await GetOrMergeClub(db, existingClubs, importedPlayer);
                 var (dbPlayer, _, _) = await GetOrMergePlayer(db, existingPlayers, importedPlayer, dbClub?.ClubId);
 
-                // Checken, ob der Spieler in diesem Master-Turnier schon drin ist (Verhindert doppelte Einträge, falls ein Kind 2x eingereicht wurde)
                 bool alreadyInTournament = await db.PlayerTournaments.AnyAsync(pt => pt.TournamentId == masterTournament.TournamentId && pt.PlayerId == dbPlayer.PlayerId);
 
                 if (!alreadyInTournament)
@@ -236,7 +268,34 @@
         {
             ErrorMessage = ""; SuccessMessage = ""; IsProcessingPlayers = true; StateHasChanged();
             var allExcelPlayers = new List<Player>();
-            foreach (var file in e.GetMultipleFiles(maximumFileCount: MAX_FILE_COUNT)) { try { using var stream = file.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); var memoryStream = new MemoryStream(); await stream.CopyToAsync(memoryStream); memoryStream.Position = 0; var filePlayers = ExcelService.ReadExcelStream(memoryStream); if (filePlayers != null) allExcelPlayers.AddRange(filePlayers); } catch (Exception ex) { ErrorMessage += $"Fehler bei {file.Name}: {ex.Message} "; } }
+            
+            foreach (var file in e.GetMultipleFiles(maximumFileCount: MAX_FILE_COUNT)) 
+            { 
+                try 
+                { 
+                    using var stream = file.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); 
+                    var memoryStream = new MemoryStream(); 
+                    await stream.CopyToAsync(memoryStream); 
+                    memoryStream.Position = 0; 
+                    
+                    var filePlayers = ExcelService.ReadExcelStream(memoryStream); 
+                    if (filePlayers != null) 
+                    {
+                        // NEU: Auch beim reinen Stammdaten-Import lesen wir die U-Klasse aus dem Dateinamen aus!
+                        string? detectedAgeGroup = ExtractAgeGroupFromFilename(file.Name);
+                        if (!string.IsNullOrEmpty(detectedAgeGroup))
+                        {
+                            foreach(var p in filePlayers)
+                            {
+                                if (string.IsNullOrWhiteSpace(p.AgeGroup)) p.AgeGroup = detectedAgeGroup;
+                            }
+                        }
+                        allExcelPlayers.AddRange(filePlayers); 
+                    } 
+                } 
+                catch (Exception ex) { ErrorMessage += $"Fehler bei {file.Name}: {ex.Message} "; } 
+            }
+
             if (!allExcelPlayers.Any()) { ErrorMessage += "Keine Spieler gefunden."; IsProcessingPlayers = false; return; }
             using var db = await DbFactory.CreateDbContextAsync(); await db.Database.EnsureCreatedAsync();
             var existingClubs = await db.Clubs.ToListAsync(); var existingPlayers = await db.Players.ToListAsync();
