@@ -151,37 +151,93 @@
         if (isDbEmpty) { IsAutoLoading = true; await LoadFromBrowserCache(silent: true); IsAutoLoading = false; }
     }
 
-    // --- 1. BROWSER / DATEI BACKUP ---
     private async Task SaveToBrowserCache() { try { ErrorMessage = ""; SuccessMessage = ""; var base64Db = await DbManager.GetDatabaseAsBase64Async(); if (string.IsNullOrEmpty(base64Db)) { ErrorMessage = "Datenbank ist leer."; return; } await JS.InvokeVoidAsync("window.browserStorage.saveDb", base64Db); SuccessMessage = "Datenbank erfolgreich im Browser-Cache gesichert!"; } catch (Exception ex) { ErrorMessage = "Speichern fehlgeschlagen: " + ex.Message; } }
     private async Task LoadFromBrowserCache(bool silent) { try { if (!silent) { ErrorMessage = ""; SuccessMessage = ""; } var base64Db = await JS.InvokeAsync<string>("window.browserStorage.loadDb"); if (string.IsNullOrEmpty(base64Db)) { if (!silent) ErrorMessage = "Kein Backup im Cache gefunden."; return; } using var memoryStream = new MemoryStream(Convert.FromBase64String(base64Db)); await DbManager.ImportDatabase(memoryStream); if (!silent) SuccessMessage = "Datenbank sofort live aus dem Browser-Cache geladen!"; else SuccessMessage = "Daten beim Start automatisch aus dem Cache wiederhergestellt."; StateHasChanged(); } catch (Exception ex) { if (!silent) ErrorMessage = "Laden fehlgeschlagen: " + ex.Message; } }
     private async Task DeleteBrowserCache() { try { await JS.InvokeVoidAsync("window.browserStorage.deleteDb"); SuccessMessage = "Der Browser-Cache wurde erfolgreich gelöscht."; StateHasChanged(); } catch (Exception ex) { ErrorMessage = "Löschen fehlgeschlagen: " + ex.Message; } }
     private async Task LoadDbFromFile(InputFileChangeEventArgs e) { try { ErrorMessage = ""; SuccessMessage = ""; using var stream = e.File.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); await DbManager.ImportDatabase(stream); SuccessMessage = "Datenbank live aus Datei geladen!"; StateHasChanged(); } catch (Exception ex) { ErrorMessage = "Datei-Import fehlgeschlagen: " + ex.Message; } }
     private async Task SaveDbToFile() => await DbManager.DownloadDatabase();
 
-    // --- NEUE SICHERE LOGIK: ERKENNT U-KLASSE IM DATEINAMEN (IGNORIERT MEHRFACHNENNUNGEN) ---
     private string? ExtractAgeGroupFromFilename(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName)) return null;
         var upperName = fileName.ToUpper();
-        
         var availableGroups = new List<string> { "U8", "U10", "U12", "U14", "U16", "U18" };
         var foundGroups = availableGroups.Where(g => upperName.Contains(g)).ToList();
-
-        // Sicherheits-Check: Wir tragen die Klasse nur ein, wenn EINDEUTIG NUR EINE im Namen steht.
-        // Wenn die Datei "Turnier_U12_U14.xlsx" heißt, ist Count = 2. Dann brechen wir ab und geben null zurück.
-        if (foundGroups.Count == 1)
-        {
-            return foundGroups[0];
-        }
-        
+        if (foundGroups.Count == 1) return foundGroups[0];
         return null;
     }
 
     // --- SMART-MERGE HILFSMETHODEN ---
-    private async Task<Club?> GetOrMergeClub(ChessDbContext db, List<Club> existingClubs, Player p) { if (p.Club == null || string.IsNullOrWhiteSpace(p.Club.Name)) return null; string importedClubName = p.Club.Name.Trim(); var dbClub = existingClubs.FirstOrDefault(c => c.Name.Equals(importedClubName, StringComparison.OrdinalIgnoreCase) || (importedClubName.Length >= 4 && c.Name.Length >= 4 && (c.Name.Contains(importedClubName, StringComparison.OrdinalIgnoreCase) || importedClubName.Contains(c.Name, StringComparison.OrdinalIgnoreCase)))); if (dbClub == null) { dbClub = new Club { Name = importedClubName }; db.Clubs.Add(dbClub); await db.SaveChangesAsync(); existingClubs.Add(dbClub); } else { if (importedClubName.Length > dbClub.Name.Length) { dbClub.Name = importedClubName; db.Clubs.Update(dbClub); await db.SaveChangesAsync(); } } return dbClub; }
-    private async Task<(Player, bool, bool)> GetOrMergePlayer(ChessDbContext db, List<Player> existingPlayers, Player importedPlayer, int? clubId) { bool isNew = false; bool isUpdated = false; var dbPlayer = existingPlayers.FirstOrDefault(dbP => dbP.Firstname.Equals(importedPlayer.Firstname, StringComparison.OrdinalIgnoreCase) && dbP.Lastname.Equals(importedPlayer.Lastname, StringComparison.OrdinalIgnoreCase)); if (dbPlayer == null) { importedPlayer.Club = null; importedPlayer.ClubId = clubId; db.Players.Add(importedPlayer); await db.SaveChangesAsync(); existingPlayers.Add(importedPlayer); isNew = true; return (importedPlayer, isNew, isUpdated); } else { bool changed = false; if (dbPlayer.ClubId == null && clubId != null) { dbPlayer.ClubId = clubId; changed = true; } if (importedPlayer.Elo.HasValue && dbPlayer.Elo != importedPlayer.Elo) { dbPlayer.Elo = importedPlayer.Elo; changed = true; } if (!dbPlayer.BirthYear.HasValue && importedPlayer.BirthYear.HasValue) { dbPlayer.BirthYear = importedPlayer.BirthYear; changed = true; } if (string.IsNullOrWhiteSpace(dbPlayer.AgeGroup) && !string.IsNullOrWhiteSpace(importedPlayer.AgeGroup)) { dbPlayer.AgeGroup = importedPlayer.AgeGroup; changed = true; } if (changed) { db.Players.Update(dbPlayer); await db.SaveChangesAsync(); isUpdated = true; } return (dbPlayer, isNew, isUpdated); } }
+    private async Task<Club?> GetOrMergeClub(ChessDbContext db, List<Club> existingClubs, Player p) 
+    { 
+        if (p.Club == null || string.IsNullOrWhiteSpace(p.Club.Name)) return null; 
+        string importedClubName = p.Club.Name.Trim(); 
+        var dbClub = existingClubs.FirstOrDefault(c => c.Name.Equals(importedClubName, StringComparison.OrdinalIgnoreCase) || (importedClubName.Length >= 4 && c.Name.Length >= 4 && (c.Name.Contains(importedClubName, StringComparison.OrdinalIgnoreCase) || importedClubName.Contains(c.Name, StringComparison.OrdinalIgnoreCase)))); 
+        if (dbClub == null) { dbClub = new Club { Name = importedClubName }; db.Clubs.Add(dbClub); await db.SaveChangesAsync(); existingClubs.Add(dbClub); } 
+        else { if (importedClubName.Length > dbClub.Name.Length) { dbClub.Name = importedClubName; db.Clubs.Update(dbClub); await db.SaveChangesAsync(); } } 
+        return dbClub; 
+    }
 
-    // --- 2. EVENT IMPORT (TURNIERGRUPPE) ---
+    // --- 🔴 HIER IST DAS NEUE VEREINSLOS-FEATURE FÜR SCHRITT 3 ---
+    private async Task<(Player, bool, bool)> GetOrMergePlayer(ChessDbContext db, List<Player> existingPlayers, List<Club> existingClubs, Player importedPlayer, int? clubId) 
+    { 
+        bool isNew = false; 
+        bool isUpdated = false; 
+        var dbPlayer = existingPlayers.FirstOrDefault(dbP => dbP.Firstname.Equals(importedPlayer.Firstname, StringComparison.OrdinalIgnoreCase) && dbP.Lastname.Equals(importedPlayer.Lastname, StringComparison.OrdinalIgnoreCase)); 
+        
+        if (dbPlayer == null) 
+        { 
+            importedPlayer.Club = null; 
+            importedPlayer.ClubId = clubId; 
+            db.Players.Add(importedPlayer); 
+            await db.SaveChangesAsync(); 
+            existingPlayers.Add(importedPlayer); 
+            isNew = true; 
+            return (importedPlayer, isNew, isUpdated); 
+        } 
+        else 
+        { 
+            bool changed = false; 
+
+            // Prüfe, ob der Spieler aktuell wirklich "Vereinslos" im alten Datensatz stehen hat.
+            bool isCurrentlyVereinslos = false;
+            if (dbPlayer.ClubId.HasValue)
+            {
+                var curClub = existingClubs.FirstOrDefault(c => c.ClubId == dbPlayer.ClubId.Value);
+                if (curClub != null && curClub.Name.Trim().Equals("Vereinslos", StringComparison.OrdinalIgnoreCase))
+                {
+                    isCurrentlyVereinslos = true;
+                }
+            }
+
+            // Prüfe, ob der NEUE Club ein echter Verein ist (damit wir nicht echten Verein mit "Vereinslos" überschreiben)
+            bool isNewClubReal = false;
+            if (clubId.HasValue)
+            {
+                var newClub = existingClubs.FirstOrDefault(c => c.ClubId == clubId.Value);
+                if (newClub != null && !newClub.Name.Trim().Equals("Vereinslos", StringComparison.OrdinalIgnoreCase))
+                {
+                    isNewClubReal = true;
+                }
+            }
+
+            // NEUE REGEL: Überschreibe den Verein, wenn er bisher NULL war ODER wenn er explizit "Vereinslos" hieß (und der neue Wert echt ist).
+            if ((dbPlayer.ClubId == null || isCurrentlyVereinslos) && isNewClubReal) 
+            { 
+                dbPlayer.ClubId = clubId; 
+                changed = true; 
+            } 
+
+            // Standard-Regeln für Elo, Jahrgang, Klasse
+            if (importedPlayer.Elo.HasValue && dbPlayer.Elo != importedPlayer.Elo) { dbPlayer.Elo = importedPlayer.Elo; changed = true; } 
+            if (!dbPlayer.BirthYear.HasValue && importedPlayer.BirthYear.HasValue) { dbPlayer.BirthYear = importedPlayer.BirthYear; changed = true; } 
+            if (string.IsNullOrWhiteSpace(dbPlayer.AgeGroup) && !string.IsNullOrWhiteSpace(importedPlayer.AgeGroup)) { dbPlayer.AgeGroup = importedPlayer.AgeGroup; changed = true; } 
+            
+            if (changed) { db.Players.Update(dbPlayer); await db.SaveChangesAsync(); isUpdated = true; } 
+            return (dbPlayer, isNew, isUpdated); 
+        } 
+    }
+
     private async Task ImportMultipleExcel(InputFileChangeEventArgs e)
     {
         ErrorMessage = ""; SuccessMessage = "";
@@ -199,7 +255,6 @@
                 var players = ExcelService.ReadExcelStream(memoryStream);
                 if (players != null && players.Any()) 
                 {
-                    // U-Klasse auslesen (ignoriert jetzt Dateien mit mehr als einem Kürzel)
                     string? detectedAgeGroup = ExtractAgeGroupFromFilename(file.Name);
                     if (!string.IsNullOrEmpty(detectedAgeGroup))
                     {
@@ -243,7 +298,9 @@
             foreach (var importedPlayer in import.Players)
             {
                 var dbClub = await GetOrMergeClub(db, existingClubs, importedPlayer);
-                var (dbPlayer, _, _) = await GetOrMergePlayer(db, existingPlayers, importedPlayer, dbClub?.ClubId);
+                
+                // Wir übergeben jetzt die Liste der Clubs an die Check-Funktion, damit sie "Vereinslos" überprüfen kann.
+                var (dbPlayer, _, _) = await GetOrMergePlayer(db, existingPlayers, existingClubs, importedPlayer, dbClub?.ClubId);
 
                 bool alreadyInTournament = await db.PlayerTournaments.AnyAsync(pt => pt.TournamentId == masterTournament.TournamentId && pt.PlayerId == dbPlayer.PlayerId);
 
@@ -262,7 +319,6 @@
         SuccessMessage = $"Das Event wurde erfolgreich erstellt! {fileCount} Altersklassen-Dateien wurden zu einem Turnier zusammengefasst und {totalPlayersMerged} Teilnehmer gespeichert.";
     }
 
-    // --- 3. MULTI STAMMDATEN IMPORT ---
     private async Task ImportMultiplePlayersOnly(InputFileChangeEventArgs e)
     {
         try
@@ -282,7 +338,6 @@
                     var filePlayers = ExcelService.ReadExcelStream(memoryStream); 
                     if (filePlayers != null) 
                     {
-                        // U-Klasse auslesen (ignoriert jetzt Dateien mit mehr als einem Kürzel)
                         string? detectedAgeGroup = ExtractAgeGroupFromFilename(file.Name);
                         if (!string.IsNullOrEmpty(detectedAgeGroup))
                         {
@@ -301,7 +356,13 @@
             using var db = await DbFactory.CreateDbContextAsync(); await db.Database.EnsureCreatedAsync();
             var existingClubs = await db.Clubs.ToListAsync(); var existingPlayers = await db.Players.ToListAsync();
             int newPlayersCount = 0; int updatedPlayersCount = 0;
-            foreach (var importedPlayer in allExcelPlayers) { var dbClub = await GetOrMergeClub(db, existingClubs, importedPlayer); var (dbPlayer, isNew, isUpdated) = await GetOrMergePlayer(db, existingPlayers, importedPlayer, dbClub?.ClubId); if (isNew) newPlayersCount++; if (isUpdated) updatedPlayersCount++; }
+            foreach (var importedPlayer in allExcelPlayers) { 
+                var dbClub = await GetOrMergeClub(db, existingClubs, importedPlayer); 
+                
+                // Wir übergeben jetzt die Liste der Clubs an die Check-Funktion
+                var (dbPlayer, isNew, isUpdated) = await GetOrMergePlayer(db, existingPlayers, existingClubs, importedPlayer, dbClub?.ClubId); 
+                if (isNew) newPlayersCount++; if (isUpdated) updatedPlayersCount++; 
+            }
             SuccessMessage = $"Stammdaten-Update erfolgreich (aus {e.FileCount} Dateien): {newPlayersCount} neue Spieler, {updatedPlayersCount} Updates.";
         }
         catch (Exception ex) { ErrorMessage = "Fehler: " + ex.Message; }
