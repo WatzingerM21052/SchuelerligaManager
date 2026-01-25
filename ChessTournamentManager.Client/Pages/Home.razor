@@ -158,19 +158,21 @@
     private async Task LoadDbFromFile(InputFileChangeEventArgs e) { try { ErrorMessage = ""; SuccessMessage = ""; using var stream = e.File.OpenReadStream(maxAllowedSize: MAX_FILE_SIZE); await DbManager.ImportDatabase(stream); SuccessMessage = "Datenbank live aus Datei geladen!"; StateHasChanged(); } catch (Exception ex) { ErrorMessage = "Datei-Import fehlgeschlagen: " + ex.Message; } }
     private async Task SaveDbToFile() => await DbManager.DownloadDatabase();
 
-    // --- NEUE FUNKTION: ERKENNT U-KLASSE IM DATEINAMEN ---
+    // --- NEUE SICHERE LOGIK: ERKENNT U-KLASSE IM DATEINAMEN (IGNORIERT MEHRFACHNENNUNGEN) ---
     private string? ExtractAgeGroupFromFilename(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName)) return null;
         var upperName = fileName.ToUpper();
         
-        // Die Reihenfolge hier ist eigentlich egal, er schaut einfach ob das Wort darin vorkommt
-        if (upperName.Contains("U8")) return "U8";
-        if (upperName.Contains("U10")) return "U10";
-        if (upperName.Contains("U12")) return "U12";
-        if (upperName.Contains("U14")) return "U14";
-        if (upperName.Contains("U16")) return "U16";
-        if (upperName.Contains("U18")) return "U18";
+        var availableGroups = new List<string> { "U8", "U10", "U12", "U14", "U16", "U18" };
+        var foundGroups = availableGroups.Where(g => upperName.Contains(g)).ToList();
+
+        // Sicherheits-Check: Wir tragen die Klasse nur ein, wenn EINDEUTIG NUR EINE im Namen steht.
+        // Wenn die Datei "Turnier_U12_U14.xlsx" heißt, ist Count = 2. Dann brechen wir ab und geben null zurück.
+        if (foundGroups.Count == 1)
+        {
+            return foundGroups[0];
+        }
         
         return null;
     }
@@ -197,8 +199,7 @@
                 var players = ExcelService.ReadExcelStream(memoryStream);
                 if (players != null && players.Any()) 
                 {
-                    // NEU: Trage für ALLE Spieler in dieser Datei die U-Klasse aus dem Dateinamen ein, 
-                    // falls in der Excel-Liste selbst keine eingetragen war.
+                    // U-Klasse auslesen (ignoriert jetzt Dateien mit mehr als einem Kürzel)
                     string? detectedAgeGroup = ExtractAgeGroupFromFilename(file.Name);
                     if (!string.IsNullOrEmpty(detectedAgeGroup))
                     {
@@ -281,7 +282,7 @@
                     var filePlayers = ExcelService.ReadExcelStream(memoryStream); 
                     if (filePlayers != null) 
                     {
-                        // NEU: Auch beim reinen Stammdaten-Import lesen wir die U-Klasse aus dem Dateinamen aus!
+                        // U-Klasse auslesen (ignoriert jetzt Dateien mit mehr als einem Kürzel)
                         string? detectedAgeGroup = ExtractAgeGroupFromFilename(file.Name);
                         if (!string.IsNullOrEmpty(detectedAgeGroup))
                         {
