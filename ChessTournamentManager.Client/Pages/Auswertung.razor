@@ -8,50 +8,47 @@
 <PageTitle>Turnier-Analytics</PageTitle>
 
 <style>
-    /* DAS RADIKALE PDF-PRINT DESIGN (A4 QUERFORMAT - GARANTIERT OHNE SCROLLBALKEN) */
+    /* DAS NEUE, SAUBERE PDF-DESIGN (KEIN BOOTSTRAP-EINFLUSS) */
     @@media print {
-        @@page { size: A4 landscape; margin: 1cm; }
+        @@page { size: A4 landscape; margin: 12mm; }
 
-        /* 1. RADIKALER RESET ALLER SCROLL-CONTAINER */
-        html, body, #app, main, .container-fluid { 
-            height: auto !important; 
-            overflow: visible !important; 
-            background: white !important; 
-            color: #000; 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
-        /* 2. BOOTSTRAP SCROLLBAR KILLER */
-        .table-responsive {
-            overflow: visible !important;
-            -webkit-overflow-scrolling: auto !important;
-            display: block !important;
-            width: 100% !important;
-        }
-
-        /* Ausblenden der UI Elemente */
-        .d-print-none, .sidebar, header, .card-header canvas { display: none !important; }
+        /* RADIKALER RESET */
+        html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: white !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: visible !important; }
+        .d-print-none { display: none !important; }
         .print-only { display: block !important; }
-        
-        /* 3. Tabellen-Design für den Druck */
-        table { width: 100% !important; border-collapse: collapse !important; margin-bottom: 25px !important;}
-        thead { display: table-header-group !important; } /* Wiederholt Tabellenkopf auf jeder neuen Seite */
-        tfoot { display: table-footer-group !important; }
-        tr { page-break-inside: avoid !important; }
-        th { background-color: #f1f3f5 !important; color: #000 !important; border-bottom: 2px solid #000 !important; -webkit-print-color-adjust: exact; padding: 6px !important; font-size: 9.5pt;}
-        td { border-bottom: 1px solid #ccc !important; padding: 4px !important; font-size: 9.5pt;}
-        
-        /* Medaillen-Farben für den Druck erhalten */
-        .text-warning { color: #d4af37 !important; -webkit-print-color-adjust: exact; }
-        .text-secondary { color: #8a8d91 !important; -webkit-print-color-adjust: exact; }
-        .text-danger { color: #cd7f32 !important; -webkit-print-color-adjust: exact; } /* Bronze */
 
-        .page-break { page-break-before: always !important; }
-        .print-header { border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .print-title { font-size: 1.5rem; font-weight: bold; text-transform: uppercase; margin: 0; }
-        .print-subtitle { color: #666; margin: 0; font-style: italic;}
+        /* HEADER DESIGN */
+        .pdf-header { border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .pdf-title { font-size: 24pt; font-weight: 800; color: #000; margin: 0; line-height: 1; text-transform: uppercase;}
+        .pdf-subtitle { font-size: 11pt; color: #555; margin: 5px 0 0 0; }
+        .pdf-meta { font-size: 9pt; color: #777; text-align: right; }
+
+        /* GRUPPEN ÜBERSCHRIFTEN */
+        .pdf-group-title { font-size: 16pt; font-weight: 700; color: #0d6efd; margin-top: 30px; margin-bottom: 10px; border-bottom: 2px solid #0d6efd; padding-bottom: 3px; }
+
+        /* PURE NATIVE HTML TABELLE (KEIN SCROLLBALKEN MÖGLICH) */
+        .pdf-table { width: 100% !important; border-collapse: collapse !important; font-size: 10pt; color: #000; }
+        .pdf-table th { background-color: #f1f3f5 !important; color: #000 !important; border-bottom: 2px solid #000; text-align: left; padding: 8px; font-weight: bold; -webkit-print-color-adjust: exact; }
+        .pdf-table th.center { text-align: center; }
+        .pdf-table td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
+        .pdf-table td.center { text-align: center; }
+        
+        /* ZEBRA STRIPING FÜR BESSERE LESBARKEIT */
+        .pdf-table tr:nth-child(even) { background-color: #fcfcfc !important; -webkit-print-color-adjust: exact; }
+        
+        /* HERVORHEBUNG FÜR SPALTEN */
+        .col-tournament { background-color: #f8f9fa !important; border-left: 1px solid #eee; border-right: 1px solid #eee; -webkit-print-color-adjust: exact; }
+        .col-sum { font-weight: bold; }
+
+        /* MEDAILLEN DRUCKFARBEN */
+        .g-icon { color: #d4af37 !important; -webkit-print-color-adjust: exact; }
+        .s-icon { color: #8a8d91 !important; -webkit-print-color-adjust: exact; }
+        .b-icon { color: #cd7f32 !important; -webkit-print-color-adjust: exact; }
+
+        /* SAUBERER SEITENUMBRUCH */
+        .pdf-table thead { display: table-header-group; }
+        .pdf-table tr { page-break-inside: avoid; }
+        .page-break { page-break-before: always; }
     }
     .print-only { display: none; }
 </style>
@@ -159,9 +156,15 @@
     var printGroups = SelectedAge == "Alle" ? FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g => g.Key) : FilteredRows.GroupBy(r => r.AgeGroup);
 
     <div class="print-only">
-        <div class="print-header">
-            <h1 class="print-title">Schülerliga OÖ - Gesamtwertung @SelectedSeason</h1>
-            <p class="print-subtitle">Offizieller Endstand - Generiert am @DateTime.Now.ToShortDateString() @(UseStreichresultat ? "| *inkl. 1 Streichresultat" : "")</p>
+        <div class="pdf-header">
+            <div>
+                <h1 class="pdf-title">Schülerliga Gesamtwertung</h1>
+                <p class="pdf-subtitle">Saison @SelectedSeason @(UseStreichresultat ? "| inkl. 1 Streichresultat" : "")</p>
+            </div>
+            <div class="pdf-meta">
+                Stand: @DateTime.Now.ToShortDateString()<br />
+                Turniere: @FilteredTournaments.Count | Spieler: @FilteredRows.Count
+            </div>
         </div>
 
         @foreach (var group in printGroups)
@@ -170,33 +173,36 @@
 
             @if (SelectedAge == "Alle" && group != printGroups.First()) { <div class="page-break"></div> }
 
-            <h3 style="color: #000; font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;">Altersklasse @group.Key</h3>
-            <table>
+            <h3 class="pdf-group-title">Altersklasse @group.Key (@classRows.Count Spieler)</h3>
+            
+            <table class="pdf-table">
                 <thead>
                     <tr>
-                        <th class="text-center" style="width: 50px;">Rang</th>
+                        <th class="center" style="width: 60px;">Rang</th>
                         <th>Name</th>
                         <th>Verein</th>
-                        <th class="text-center" style="width: 50px;">Punkte</th>
-                        <th class="text-center" style="width: 50px;">Spiele</th>
-                        @foreach (var tourney in FilteredTournaments) { <th class="text-center">@Truncate(tourney.Name, 12)<br/><span style="font-size: 7pt; font-weight: normal;">(Platz)</span></th> }
+                        <th class="center" style="width: 60px;">Pkte.</th>
+                        <th class="center" style="width: 50px;">Sp.</th>
+                        @foreach (var tourney in FilteredTournaments) { <th class="center col-tournament">@Truncate(tourney.Name, 10)<br/><span style="font-size: 8pt; font-weight: normal;">(Rang)</span></th> }
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var row in classRows)
                     {
                         <tr>
-                            <td class="text-center fw-bold">
-                                @if (row.Rank == 1) { <span>1. <i class="bi bi-trophy-fill text-warning ms-1"></i></span> }
-                                else if (row.Rank == 2) { <span>2. <i class="bi bi-trophy-fill text-secondary ms-1"></i></span> }
-                                else if (row.Rank == 3) { <span>3. <i class="bi bi-trophy-fill text-danger ms-1"></i></span> }
+                            <td class="center" style="font-weight: 700;">
+                                @if (row.Rank == 1) { <span>1. <i class="bi bi-trophy-fill g-icon"></i></span> }
+                                else if (row.Rank == 2) { <span>2. <i class="bi bi-trophy-fill s-icon"></i></span> }
+                                else if (row.Rank == 3) { <span>3. <i class="bi bi-trophy-fill b-icon"></i></span> }
                                 else { <span>@row.Rank.</span> }
                             </td>
-                            <td style="font-weight: bold;">@row.Lastname @row.Firstname</td>
-                            <td>@row.ClubName</td>
-                            <td class="text-center" style="font-weight: bold;">@row.EffectivePoints</td>
-                            <td class="text-center">@row.TournamentsCount</td>
-                            @foreach (var tourney in FilteredTournaments) { <td class="text-center">@(row.Results.TryGetValue(tourney.TournamentId, out var res) ? res.Rank.ToString() + "." : "")</td> }
+                            <td style="font-weight: 600;">@row.Lastname @row.Firstname</td>
+                            <td>@(string.IsNullOrWhiteSpace(row.ClubName) || row.ClubName == "Vereinslos" ? "-" : row.ClubName)</td>
+                            <td class="center col-sum">@row.EffectivePoints</td>
+                            <td class="center">@row.TournamentsCount</td>
+                            @foreach (var tourney in FilteredTournaments) { 
+                                <td class="center col-tournament">@(row.Results.TryGetValue(tourney.TournamentId, out var res) ? res.Rank.ToString() + "." : "")</td> 
+                            }
                         </tr>
                     }
                 </tbody>
@@ -219,7 +225,6 @@
         SelectedSeason = AvailableSeasons.Contains(currentSeason) ? currentSeason : AvailableSeasons.FirstOrDefault() ?? currentSeason;
         
         var rawPlayers = await db.Players.Include(p => p.Club).Include(p => p.PlayerTournaments).Where(p => p.PlayerTournaments.Any()).ToListAsync();
-        
         AllRows = rawPlayers.Select(p => new LeaderboardRow { PlayerId = p.PlayerId, Firstname = p.Firstname, Lastname = p.Lastname, ClubName = p.Club?.Name ?? "Vereinslos", AgeGroup = string.IsNullOrWhiteSpace(p.AgeGroup) ? "Ohne" : p.AgeGroup, AllResults = p.PlayerTournaments.ToDictionary(pt => pt.TournamentId, pt => pt) }).ToList();
         ApplyFilters();
     }
@@ -259,14 +264,12 @@
         {
             var classRows = group.ToList();
             sb.AppendLine($"ALTERSKLASSE {group.Key}");
-            // IM EXCEL: Es stehen jetzt "Platzierungen" statt "Punkte"
             sb.Append("Rang;Name;Verein;Punkte Gesamt;Anz. Turniere");
             foreach (var t in FilteredTournaments) { sb.Append($";{t.Name} (Platz)"); }
             sb.AppendLine();
             foreach (var row in classRows)
             {
                 sb.Append($"{row.Rank};{row.Lastname} {row.Firstname};{row.ClubName};{row.EffectivePoints};{row.TournamentsCount}");
-                // Im Excel auch den Rang exportieren
                 foreach (var t in FilteredTournaments) { sb.Append($";{(row.Results.TryGetValue(t.TournamentId, out var res) ? res.Rank.ToString() : "")}"); }
                 sb.AppendLine();
             }
