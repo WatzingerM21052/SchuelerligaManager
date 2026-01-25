@@ -8,20 +8,32 @@
 <PageTitle>Turnier-Analytics</PageTitle>
 
 <style>
-    /* DAS ULTIMATIVE PDF-PRINT DESIGN (A4 QUERFORMAT) */
+    /* DAS VERBESSERTE, ULTIMATIVE PDF-PRINT DESIGN (A4 QUERFORMAT) */
     @@media print {
-        @@page { size: A4 landscape; margin: 1.2cm; }
-        body { background: white !important; font-family: 'Segoe UI', sans-serif; color: #000; font-size: 10pt; }
+        /* Reset aller Scrollbars und Höhenbeschränkungen für echten Mehrseiten-Druck */
+        html, body, #app, main { 
+            height: auto !important; 
+            overflow: visible !important; 
+            background: white !important; 
+            color: #000; 
+            font-family: 'Segoe UI', sans-serif; 
+            font-size: 10pt;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        @@page { size: A4 landscape; margin: 1cm; }
+        
         .d-print-none, .sidebar, header, .card-header canvas { display: none !important; }
         .print-only { display: block !important; }
         
-        /* Tabellen für Druck optimieren */
+        /* Tabellen für Druck optimieren: Kein Abschneiden, korrekter Seitenumbruch */
         table { width: 100% !important; border-collapse: collapse !important; page-break-inside: auto; margin-bottom: 20px;}
-        thead { display: table-header-group; } /* Wiederholt Tabellenkopf auf neuer Seite */
+        thead { display: table-header-group; } /* Wiederholt Tabellenkopf auf jeder neuen Seite */
         tfoot { display: table-footer-group; }
         tr { page-break-inside: avoid; page-break-after: auto; }
-        th { background-color: #f1f3f5 !important; color: #000 !important; border-bottom: 2px solid #000 !important; -webkit-print-color-adjust: exact; padding: 6px !important; font-size: 9pt;}
-        td { border-bottom: 1px solid #ccc !important; padding: 4px !important; font-size: 9pt;}
+        th { background-color: #f1f3f5 !important; color: #000 !important; border-bottom: 2px solid #000 !important; -webkit-print-color-adjust: exact; padding: 8px !important; font-size: 9.5pt;}
+        td { border-bottom: 1px solid #ccc !important; padding: 6px !important; font-size: 9.5pt;}
         
         /* Medaillen-Farben für den Druck erhalten */
         .text-warning { color: #d4af37 !important; -webkit-print-color-adjust: exact; }
@@ -31,7 +43,7 @@
         .page-break { page-break-after: always; }
         .print-header { border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
         .print-title { font-size: 1.5rem; font-weight: bold; text-transform: uppercase; margin: 0; }
-        .print-subtitle { color: #666; margin: 0; }
+        .print-subtitle { color: #666; margin: 0; font-style: italic;}
     }
     .print-only { display: none; }
 </style>
@@ -79,7 +91,7 @@
         {
             var classRows = group.ToList();
 
-            <div class="card border-0 shadow-sm mb-5 overflow-hidden">
+            <div class="card border-0 shadow-sm mb-5">
                 <div class="card-header bg-dark text-white border-bottom-0 py-3 d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0"><i class="bi bi-diagram-3-fill me-2 text-warning"></i>Klasse @group.Key</h5>
                     <span class="badge bg-light text-dark fs-6">@classRows.Count Spieler</span>
@@ -88,23 +100,23 @@
                     <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
                         <thead class="bg-light">
                             <tr class="text-muted text-uppercase small" style="border-bottom: 2px solid #dee2e6;">
-                                <th class="text-center" style="width: 60px;">Rang</th>
+                                <th class="text-center" style="width: 80px;">Rang</th>
                                 <th>Name</th>
                                 <th>Verein</th>
-                                <th class="text-center" style="width: 70px;">Punkte</th>
+                                <th class="text-center" style="width: 70px;">Pkt.</th>
                                 <th class="text-center" style="width: 60px;">Spiele</th>
-                                @foreach (var tourney in FilteredTournaments) { <th class="text-center bg-white text-dark fw-bold border-start border-end" style="width: 120px;" title="@tourney.Name">@Truncate(tourney.Name, 15)</th> }
+                                @foreach (var tourney in FilteredTournaments) { <th class="text-center bg-white text-dark fw-bold border-start border-end" style="width: 120px;" title="@tourney.Name">@Truncate(tourney.Name, 15)<br/><span class="fw-normal text-muted" style="font-size: 0.7rem;">(Platzierung)</span></th> }
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var row in classRows)
                             {
                                 <tr>
-                                    <td class="text-center fw-bold text-dark fs-5">
-                                        @if (row.Rank == 1) { <i class="bi bi-trophy-fill text-warning" title="Gold"></i> }
-                                        else if (row.Rank == 2) { <i class="bi bi-trophy-fill text-secondary" title="Silber"></i> }
-                                        else if (row.Rank == 3) { <i class="bi bi-trophy-fill text-danger" title="Bronze"></i> }
-                                        else { @row.Rank }
+                                    <td class="text-center fw-bold text-dark fs-6">
+                                        @if (row.Rank == 1) { <span>1. <i class="bi bi-trophy-fill text-warning ms-1" title="Gold"></i></span> }
+                                        else if (row.Rank == 2) { <span>2. <i class="bi bi-trophy-fill text-secondary ms-1" title="Silber"></i></span> }
+                                        else if (row.Rank == 3) { <span>3. <i class="bi bi-trophy-fill text-danger ms-1" title="Bronze"></i></span> }
+                                        else { <span>@row.Rank.</span> }
                                     </td>
                                     <td class="fw-bold text-dark">@row.Lastname @row.Firstname</td>
                                     <td class="text-muted small">@row.ClubName</td>
@@ -112,8 +124,8 @@
                                     <td class="text-center text-muted">@row.TournamentsCount</td>
                                     @foreach (var tourney in FilteredTournaments) 
                                     { 
-                                        <td class="text-center border-start border-end @(row.Results.ContainsKey(tourney.TournamentId) ? "bg-light" : "")">
-                                            @(row.Results.TryGetValue(tourney.TournamentId, out var result) ? result.Points.ToString() : "-")
+                                        <td class="text-center border-start border-end @(row.Results.ContainsKey(tourney.TournamentId) ? "bg-light fw-bold" : "text-muted")">
+                                            @(row.Results.TryGetValue(tourney.TournamentId, out var result) ? result.Rank.ToString() + "." : "-")
                                         </td> 
                                     }
                                 </tr>
@@ -122,8 +134,8 @@
                         <tfoot class="bg-light fw-bold text-dark border-top">
                             <tr class="small text-muted">
                                 <td colspan="3" class="text-end pe-3 text-uppercase">Summen:</td>
-                                <td class="text-center text-dark">@classRows.Sum(r => r.EffectivePoints)</td>
-                                <td class="text-center text-dark">@classRows.Sum(r => r.TournamentsCount)</td>
+                                <td class="text-center text-dark fs-6">@classRows.Sum(r => r.EffectivePoints) Pkt.</td>
+                                <td class="text-center text-dark fs-6">@classRows.Sum(r => r.TournamentsCount) Sp.</td>
                                 @foreach (var tourney in FilteredTournaments) { <td class="text-center text-dark border-start border-end">@classRows.Count(r => r.Results.ContainsKey(tourney.TournamentId)) Teiln.</td> }
                             </tr>
                         </tfoot>
@@ -152,29 +164,29 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th class="text-center" style="width: 40px;">Rg.</th>
+                        <th class="text-center" style="width: 50px;">Rang</th>
                         <th>Name</th>
                         <th>Verein</th>
-                        <th class="text-center" style="width: 50px;">Pkt</th>
-                        <th class="text-center" style="width: 40px;">Sp</th>
-                        @foreach (var tourney in FilteredTournaments) { <th class="text-center">@Truncate(tourney.Name, 12)</th> }
+                        <th class="text-center" style="width: 50px;">Punkte</th>
+                        <th class="text-center" style="width: 50px;">Spiele</th>
+                        @foreach (var tourney in FilteredTournaments) { <th class="text-center">@Truncate(tourney.Name, 12)<br/><span style="font-size: 7pt; font-weight: normal;">(Platz)</span></th> }
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var row in classRows)
                     {
                         <tr>
-                            <td class="text-center" style="font-weight: bold;">
-                                @if (row.Rank == 1) { <span class="text-warning">1.</span> }
-                                else if (row.Rank == 2) { <span class="text-secondary">2.</span> }
-                                else if (row.Rank == 3) { <span class="text-danger">3.</span> }
-                                else { @row.Rank }
+                            <td class="text-center fw-bold">
+                                @if (row.Rank == 1) { <span>1. <i class="bi bi-trophy-fill text-warning ms-1"></i></span> }
+                                else if (row.Rank == 2) { <span>2. <i class="bi bi-trophy-fill text-secondary ms-1"></i></span> }
+                                else if (row.Rank == 3) { <span>3. <i class="bi bi-trophy-fill text-danger ms-1"></i></span> }
+                                else { <span>@row.Rank.</span> }
                             </td>
                             <td style="font-weight: bold;">@row.Lastname @row.Firstname</td>
                             <td>@row.ClubName</td>
                             <td class="text-center" style="font-weight: bold;">@row.EffectivePoints</td>
                             <td class="text-center">@row.TournamentsCount</td>
-                            @foreach (var tourney in FilteredTournaments) { <td class="text-center">@(row.Results.TryGetValue(tourney.TournamentId, out var res) ? res.Points.ToString() : "")</td> }
+                            @foreach (var tourney in FilteredTournaments) { <td class="text-center">@(row.Results.TryGetValue(tourney.TournamentId, out var res) ? res.Rank.ToString() + "." : "")</td> }
                         </tr>
                     }
                 </tbody>
@@ -199,7 +211,6 @@
         
         var rawPlayers = await db.Players.Include(p => p.Club).Include(p => p.PlayerTournaments).Where(p => p.PlayerTournaments.Any()).ToListAsync();
         
-        // Das Spieler-Objekt hat jetzt durch das Smart-Merge automatisch die richtige AgeGroup
         AllRows = rawPlayers.Select(p => new LeaderboardRow { PlayerId = p.PlayerId, Firstname = p.Firstname, Lastname = p.Lastname, ClubName = p.Club?.Name ?? "Vereinslos", AgeGroup = string.IsNullOrWhiteSpace(p.AgeGroup) ? "Ohne" : p.AgeGroup, AllResults = p.PlayerTournaments.ToDictionary(pt => pt.TournamentId, pt => pt) }).ToList();
         ApplyFilters();
     }
@@ -239,13 +250,15 @@
         {
             var classRows = group.ToList();
             sb.AppendLine($"ALTERSKLASSE {group.Key}");
+            // NEU IM EXCEL: Es stehen jetzt "Platzierungen" statt "Punkte"
             sb.Append("Rang;Name;Verein;Punkte Gesamt;Anz. Turniere");
-            foreach (var t in FilteredTournaments) { sb.Append($";{t.Name}"); }
+            foreach (var t in FilteredTournaments) { sb.Append($";{t.Name} (Platz)"); }
             sb.AppendLine();
             foreach (var row in classRows)
             {
                 sb.Append($"{row.Rank};{row.Lastname} {row.Firstname};{row.ClubName};{row.EffectivePoints};{row.TournamentsCount}");
-                foreach (var t in FilteredTournaments) { sb.Append($";{(row.Results.TryGetValue(t.TournamentId, out var res) ? res.Points.ToString() : "")}"); }
+                // Im Excel auch den Rang exportieren
+                foreach (var t in FilteredTournaments) { sb.Append($";{(row.Results.TryGetValue(t.TournamentId, out var res) ? res.Rank.ToString() : "")}"); }
                 sb.AppendLine();
             }
             sb.AppendLine();
