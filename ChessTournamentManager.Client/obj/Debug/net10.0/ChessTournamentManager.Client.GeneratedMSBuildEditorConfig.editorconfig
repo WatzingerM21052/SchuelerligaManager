@@ -40,6 +40,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ291bnRlci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/matth/OneDrive/Desktop/SchuelerligaManager/ChessTournamentManager.Client/Pages/DatenDetektiv.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGF0ZW5EZXRla3Rpdi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/matth/OneDrive/Desktop/SchuelerligaManager/ChessTournamentManager.Client/Pages/HallOfFame.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSGFsbE9mRmFtZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/matth/OneDrive/Desktop/SchuelerligaManager/ChessTournamentManager.Client/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSG9tZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 

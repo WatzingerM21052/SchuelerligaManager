@@ -1,0 +1,340 @@
+@page "/hall-of-fame"
+@using ChessTournamentManager.Shared.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<ChessDbContext> DbFactory
+
+<PageTitle>Hall of Fame</PageTitle>
+
+<style>
+    /* Premium-Header */
+    .hof-header {
+        background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        color: white;
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        margin-bottom: 2rem;
+    }
+
+    /* Stat-Cards (OHNE HOVER-EFFEKT) */
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Das Podium - NEUE EDLE FARBEN */
+    .podium-container {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 1rem;
+        min-height: 250px;
+        padding-bottom: 1rem;
+    }
+
+    .podium-step {
+        width: 30%;
+        border-radius: 12px 12px 0 0;
+        text-align: center;
+        padding: 1rem;
+        color: white;
+        box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+
+    /* Gold: Strahlend & Warm */
+    .step-1 {
+        background: linear-gradient(180deg, #F4C430 0%, #C49B25 100%);
+        height: 220px;
+        z-index: 3;
+    }
+
+    /* Silber: Clean & Kühl */
+    .step-2 {
+        background: linear-gradient(180deg, #E0E0E0 0%, #B0B0B0 100%);
+        height: 170px;
+        z-index: 2;
+        color: #333;
+    }
+
+    /* Bronze: Modernes Kupfer/Rose-Gold */
+    .step-3 {
+        background: linear-gradient(180deg, #D4A373 0%, #A67C52 100%);
+        height: 140px;
+        z-index: 1;
+    }
+
+    /* Spieler-Bilder (Platzhalter) auf dem Podium */
+    .avatar-circle {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 3px solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: -40px auto 10px auto;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Für Silber passen wir den Ring an, da der Text dunkel ist */
+    .step-2 .avatar-circle {
+        border-color: #fff;
+        background: rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Animationen */
+    .fade-in-up {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div class="container-fluid pb-5">
+
+    <div class="hof-header fade-in-up">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="fw-bolder display-5 mb-2"><i class="bi bi-stars me-2"></i>Hall of Fame</h1>
+                <p class="fs-5 opacity-75 mb-0">Die ewige Bestenliste der Schülerliga. Alle Saisons, alle Legenden, ein
+                    Ort.</p>
+            </div>
+            <div class="col-md-6 mt-4 mt-md-0">
+                <div class="d-flex justify-content-md-end gap-4 text-center">
+                    <div>
+                        <div class="fs-1 fw-bold">@TotalPlayers</div>
+                        <div class="text-uppercase small fw-bold opacity-75 letter-spacing-1">Spieler</div>
+                    </div>
+                    <div class="border-start border-white opacity-25"></div>
+                    <div>
+                        <div class="fs-1 fw-bold">@TotalGames</div>
+                        <div class="text-uppercase small fw-bold opacity-75 letter-spacing-1">Turnier-Teilnahmen</div>
+                    </div>
+                    <div class="border-start border-white opacity-25"></div>
+                    <div>
+                        <div class="fs-1 fw-bold">@TotalClubs</div>
+                        <div class="text-uppercase small fw-bold opacity-75 letter-spacing-1">Vereine</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+        </div>
+    }
+    else
+    {
+        <h4 class="fw-bold text-dark mb-4 ms-2 fade-in-up"><i class="bi bi-trophy-fill text-warning me-2"></i>All-Time
+            Punkte-Giganten</h4>
+        <div class="row g-4 mb-5 fade-in-up">
+            <div class="col-lg-7">
+                <div class="stat-card h-100 d-flex flex-column justify-content-end p-0 overflow-hidden bg-light border-0">
+                    <div class="podium-container pt-5 mt-4">
+                        @if (TopPoints.Count >= 3)
+                        {
+                            <div class="podium-step step-2 d-flex flex-column justify-content-start">
+                                <div class="avatar-circle"><i class="bi bi-person-fill text-secondary"></i></div>
+                                <span class="fw-bold fs-5 text-truncate px-1">@TopPoints[1].Firstname</span>
+                                <span class="small opacity-75">@TopPoints[1].Lastname</span>
+                                <span
+                                    class="badge bg-white text-dark mt-auto mb-2 fw-bolder fs-6 shadow-sm">@TopPoints[1].TotalPoints
+                                    Pkt.</span>
+                            </div>
+
+                            <div class="podium-step step-1 d-flex flex-column justify-content-start">
+                                <div class="avatar-circle" style="width: 80px; height: 80px; margin-top: -50px;"><i
+                                        class="bi bi-trophy-fill text-warning"></i></div>
+                                <span class="fw-bolder fs-4 text-truncate px-1">@TopPoints[0].Firstname</span>
+                                <span class="small opacity-75">@TopPoints[0].Lastname</span>
+                                <span
+                                    class="badge bg-dark text-warning mt-auto mb-3 fw-bolder fs-5 shadow-sm">@TopPoints[0].TotalPoints
+                                    Pkt.</span>
+                            </div>
+
+                            <div class="podium-step step-3 d-flex flex-column justify-content-start">
+                                <div class="avatar-circle"><i class="bi bi-person-fill text-white"></i></div>
+                                <span class="fw-bold fs-6 text-truncate px-1">@TopPoints[2].Firstname</span>
+                                <span class="small opacity-75">@TopPoints[2].Lastname</span>
+                                <span
+                                    class="badge bg-white text-dark mt-auto mb-2 fw-bolder fs-6 shadow-sm">@TopPoints[2].TotalPoints
+                                    Pkt.</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="stat-card h-100">
+                    <h6 class="text-muted fw-bold text-uppercase mb-3 ps-2">Die Verfolger (Plätze 4 - 10)</h6>
+                    <ul class="list-group list-group-flush">
+                        @for (int i = 3; i < TopPoints.Count; i++)
+                        {
+                            var p = TopPoints[i];
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-0 mb-1 rounded-3"
+                                style="background-color: #f8f9fa;">
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold text-muted me-3" style="width: 25px;">@(i + 1).</span>
+                                    <span class="fw-bold text-dark">@p.Firstname @p.Lastname</span>
+                                </div>
+                                <span class="badge bg-secondary rounded-pill">@p.TotalPoints Pkt.</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 fade-in-up" style="animation-delay: 0.2s;">
+
+            <div class="col-md-6">
+                <div class="stat-card h-100">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle me-3">
+                            <i class="bi bi-calendar2-check-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold text-dark mb-0">Die Dauerbrenner</h4>
+                            <span class="text-muted small">Meiste gespielte Turniere überhaupt</span>
+                        </div>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @for (int i = 0; i < TopGames.Count; i++)
+                        {
+                            var p = TopGames[i];
+                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center border-light">
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold text-primary me-3">@(i + 1).</span>
+                                    <div>
+                                        <span class="fw-bold text-dark d-block">@p.Firstname @p.Lastname</span>
+                                        <span class="small text-muted"><i class="bi bi-geo-alt-fill me-1"></i>@p.ClubName</span>
+                                    </div>
+                                </div>
+                                <span class="badge bg-primary rounded-pill px-3 py-2">@p.TotalGames Turniere</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="stat-card bg-dark text-white h-100">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-white bg-opacity-10 text-warning p-3 rounded-circle me-3">
+                            <i class="bi bi-buildings-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Größte Schach-Hochburgen</h4>
+                            <span class="text-white-50 small">Vereine mit den meisten Spielern</span>
+                        </div>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @for (int i = 0; i < TopClubs.Count; i++)
+                        {
+                            var c = TopClubs[i];
+                            <li
+                                class="list-group-item bg-transparent text-white px-0 d-flex justify-content-between align-items-center border-secondary">
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold text-warning me-3">@(i + 1).</span>
+                                    <span class="fw-bold">@c.Name</span>
+                                </div>
+                                <span class="badge bg-light text-dark rounded-pill px-3 py-2 fw-bold">@c.PlayerCount
+                                    Spieler</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    }
+</div>
+
+@code {
+    private class PlayerStat
+    {
+        public string Firstname { get; set; } = ""; public string Lastname { get; set; } = ""; public
+    string ClubName
+        { get; set; } = ""; public double TotalPoints { get; set; }
+        public int TotalGames { get; set; }
+    }
+    private class ClubStat { public string Name { get; set; } = ""; public int PlayerCount { get; set; } }
+
+    private bool IsLoading = true;
+
+    // Globale Statistiken für den Header
+    private int TotalPlayers = 0;
+    private int TotalGames = 0;
+    private int TotalClubs = 0;
+
+    // Listen für die Anzeigen
+    private List<PlayerStat> TopPoints = new();
+    private List<PlayerStat> TopGames = new();
+    private List<ClubStat> TopClubs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        // Alle Spieler laden, die mindestens ein Turnier gespielt haben
+        var allPlayers = await db.Players.Include(p => p.Club).Include(p => p.PlayerTournaments).Where(p =>
+        p.PlayerTournaments.Any()).ToListAsync();
+        var allClubs = await db.Clubs.Include(c => c.Players).ToListAsync();
+
+        // Header Statistiken berechnen
+        TotalPlayers = allPlayers.Count;
+        TotalGames = allPlayers.Sum(p => p.PlayerTournaments.Count);
+        TotalClubs = allClubs.Count;
+
+        // Top 10 Punkte
+        TopPoints = allPlayers.OrderByDescending(p => p.PlayerTournaments.Sum(t => t.Points)).Take(10).Select(p => new
+        PlayerStat
+        {
+            Firstname = p.Firstname,
+            Lastname = p.Lastname,
+            ClubName = p.Club?.Name ?? "Vereinslos",
+            TotalPoints =
+        p.PlayerTournaments.Sum(t => t.Points)
+        }).ToList();
+
+        // Top 10 Dauerbrenner (Meiste Turniere)
+        TopGames = allPlayers.OrderByDescending(p => p.PlayerTournaments.Count).Take(10).Select(p => new PlayerStat
+        {
+            Firstname
+        = p.Firstname,
+            Lastname = p.Lastname,
+            ClubName = p.Club?.Name ?? "Vereinslos",
+            TotalGames = p.PlayerTournaments.Count
+        }).ToList();
+
+        // Top 10 Vereine
+        TopClubs = allClubs.OrderByDescending(c => c.Players.Count).Take(10).Select(c => new ClubStat
+        {
+            Name = c.Name,
+            PlayerCount = c.Players.Count
+        }).ToList();
+
+        IsLoading = false;
+    }
+}
