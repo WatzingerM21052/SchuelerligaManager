@@ -6,98 +6,232 @@
 <PageTitle>Hall of Fame</PageTitle>
 
 <style>
-    /* Premium-Header */
+    /* --- PREMIUM HEADER --- */
     .hof-header {
-        background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
         color: white;
         border-radius: 16px;
-        padding: 2.5rem 2rem;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        margin-bottom: 2rem;
+        padding: 3rem 2.5rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        margin-bottom: 3rem;
+        position: relative;
+        overflow: hidden;
     }
 
-    /* Stat-Cards (OHNE HOVER-EFFEKT) */
+    .hof-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+        transform: rotate(30deg);
+        pointer-events: none;
+    }
+
+    /* --- KARTEN DESIGN --- */
     .stat-card {
         background: white;
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 1.5rem;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        height: 100%;
     }
 
-    /* Das Podium - NEUE EDLE FARBEN */
+    .stat-card-dark {
+        background: linear-gradient(145deg, #2b2b2b, #1a1a1a);
+        color: white;
+        border: none;
+    }
+
+    /* --- DAS NEUE PREMIUM PODEST --- */
     .podium-container {
         display: flex;
         align-items: flex-end;
         justify-content: center;
-        gap: 1rem;
-        min-height: 250px;
-        padding-bottom: 1rem;
+        gap: 1.5rem;
+        min-height: 320px;
+        padding-bottom: 2rem;
+        perspective: 1000px;
     }
 
     .podium-step {
         width: 30%;
-        border-radius: 12px 12px 0 0;
+        border-radius: 12px 12px 4px 4px;
         text-align: center;
         padding: 1rem;
-        color: white;
-        box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
         position: relative;
+        /* Harte Lichtkante oben für 3D-Effekt */
+        border-top: 2px solid rgba(255, 255, 255, 0.5);
+        /* Tiefe durch Schatten innen */
+        box-shadow: inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-column;
+        justify-content: flex-end;
     }
 
-    /* Gold: Strahlend & Warm */
+    /* Riesige Hintergrund-Zahl */
+    .rank-number-bg {
+        position: absolute;
+        bottom: 0px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 8rem;
+        font-weight: 900;
+        opacity: 0.15;
+        line-height: 1;
+        z-index: 0;
+        pointer-events: none;
+        mix-blend-mode: overlay;
+    }
+
+    /* --- GOLD (PLATZ 1) - Luxuriös & Warm --- */
     .step-1 {
-        background: linear-gradient(180deg, #F4C430 0%, #C49B25 100%);
-        height: 220px;
+        height: 260px;
         z-index: 3;
+        /* Komplexer metallischer Gradient */
+        background: linear-gradient(to bottom right, #FFD700, #FDB931, #C08204, #FDB931);
+        color: #5c3d00;
+        /* Dunkler Text für Kontrast */
+        /* Goldener Schein nach außen */
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.4), inset 0 -10px 20px rgba(0, 0, 0, 0.2);
     }
 
-    /* Silber: Clean & Kühl */
+    .step-1 .avatar-circle {
+        border-color: #fff7d1;
+        background: linear-gradient(135deg, #FFD700, #FDB931);
+        color: #5c3d00;
+        box-shadow: 0 5px 15px rgba(192, 130, 4, 0.3);
+    }
+
+    /* --- SILBER (PLATZ 2) - Poliertes Chrom --- */
     .step-2 {
-        background: linear-gradient(180deg, #E0E0E0 0%, #B0B0B0 100%);
-        height: 170px;
+        height: 210px;
         z-index: 2;
+        background: linear-gradient(to bottom right, #E0E0E0, #F8F8F8, #B0B0B0, #E0E0E0);
         color: #333;
+        /* Dunkler Text */
+        box-shadow: 0 0 30px rgba(224, 224, 224, 0.4), inset 0 -10px 20px rgba(0, 0, 0, 0.2);
     }
 
-    /* Bronze: Modernes Kupfer/Rose-Gold */
+    .step-2 .avatar-circle {
+        border-color: white;
+        background: linear-gradient(135deg, #E0E0E0, #B0B0B0);
+        color: #555;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    /* --- BRONZE (PLATZ 3) - Gealtertes Kupfer --- */
     .step-3 {
-        background: linear-gradient(180deg, #D4A373 0%, #A67C52 100%);
-        height: 140px;
+        height: 180px;
         z-index: 1;
+        background: linear-gradient(to bottom right, #D4A373, #E6C3A1, #A67C52, #D4A373);
+        color: #4a2c15;
+        box-shadow: 0 0 30px rgba(212, 163, 115, 0.4), inset 0 -10px 20px rgba(0, 0, 0, 0.2);
     }
 
-    /* Spieler-Bilder (Platzhalter) auf dem Podium */
+    .step-3 .avatar-circle {
+        border-color: #f3e5d8;
+        background: linear-gradient(135deg, #D4A373, #A67C52);
+        color: #4a2c15;
+        box-shadow: 0 5px 15px rgba(166, 124, 82, 0.3);
+    }
+
+    /* Avatar- und Text-Styling auf dem Podest */
     .avatar-circle {
-        width: 60px;
-        height: 60px;
-        background: rgba(255, 255, 255, 0.2);
-        border: 3px solid white;
+        width: 70px;
+        height: 70px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 2rem;
-        margin: -40px auto 10px auto;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        margin: -55px auto 15px auto;
+        border-width: 4px;
+        border-style: solid;
+        position: relative;
+        z-index: 2;
     }
 
-    /* Für Silber passen wir den Ring an, da der Text dunkel ist */
-    .step-2 .avatar-circle {
-        border-color: #fff;
-        background: rgba(0, 0, 0, 0.05);
+    .podium-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .podium-name {
+        font-weight: 800;
+        font-size: 1.1rem;
+        display: block;
+        line-height: 1.2;
+    }
+
+    .podium-club {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+        display: block;
+        font-weight: 600;
+    }
+
+    .podium-badge {
+        font-weight: 900;
+        font-size: 1rem;
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        display: inline-block;
+    }
+
+    .badge-gold {
+        background: rgba(255, 255, 255, 0.9);
+        color: #C08204;
+    }
+
+    .badge-silver {
+        background: rgba(255, 255, 255, 0.9);
+        color: #555;
+    }
+
+    .badge-bronze {
+        background: rgba(255, 255, 255, 0.9);
+        color: #A67C52;
+    }
+
+    /* Listen-Styles */
+    .list-group-item-custom {
+        border: none;
+        margin-bottom: 6px;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        background: #f4f6f9;
+        transition: all 0.2s;
+    }
+
+    .rank-badge {
+        width: 28px;
+        height: 28px;
+        background: #e9ecef;
+        color: #6c757d;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        margin-right: 1rem;
     }
 
     /* Animationen */
     .fade-in-up {
-        animation: fadeInUp 0.6s ease-out;
+        animation: fadeInUp 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
     }
 
     @@keyframes fadeInUp {
         from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(40px);
         }
 
         to {
@@ -105,32 +239,40 @@
             transform: translateY(0);
         }
     }
+
+    .delay-1 {
+        animation-delay: 0.1s;
+    }
+
+    .delay-2 {
+        animation-delay: 0.2s;
+    }
 </style>
 
-<div class="container-fluid pb-5">
+<div class="container-fluid pb-5 px-4">
 
     <div class="hof-header fade-in-up">
         <div class="row align-items-center">
-            <div class="col-md-6">
-                <h1 class="fw-bolder display-5 mb-2"><i class="bi bi-stars me-2"></i>Hall of Fame</h1>
-                <p class="fs-5 opacity-75 mb-0">Die ewige Bestenliste der Schülerliga. Alle Saisons, alle Legenden, ein
-                    Ort.</p>
+            <div class="col-lg-7">
+                <h1 class="fw-bolder display-4 mb-3"><i class="bi bi-stars me-3"></i>Hall of Fame</h1>
+                <p class="fs-5 opacity-90 fw-light mb-0" style="max-width: 600px;">Die ewige Bestenliste der
+                    Schülerliga. Ein Denkmal für alle Saisons, alle Rekorde und jede gespielte Partie.</p>
             </div>
-            <div class="col-md-6 mt-4 mt-md-0">
-                <div class="d-flex justify-content-md-end gap-4 text-center">
+            <div class="col-lg-5 mt-5 mt-lg-0">
+                <div class="d-flex justify-content-lg-end justify-content-center gap-5 text-center">
                     <div>
-                        <div class="fs-1 fw-bold">@TotalPlayers</div>
-                        <div class="text-uppercase small fw-bold opacity-75 letter-spacing-1">Spieler</div>
+                        <div class="display-6 fw-bolder mb-1">@TotalPlayers</div>
+                        <div class="text-uppercase small fw-bold opacity-50 letter-spacing-2">Spieler</div>
                     </div>
-                    <div class="border-start border-white opacity-25"></div>
+                    <div class="border-start border-white opacity-20 d-none d-sm-block"></div>
                     <div>
-                        <div class="fs-1 fw-bold">@TotalGames</div>
-                        <div class="text-uppercase small fw-bold opacity-75 letter-spacing-1">Turnier-Teilnahmen</div>
+                        <div class="display-6 fw-bolder mb-1">@TotalGames</div>
+                        <div class="text-uppercase small fw-bold opacity-50 letter-spacing-2">Turniere</div>
                     </div>
-                    <div class="border-start border-white opacity-25"></div>
+                    <div class="border-start border-white opacity-20 d-none d-sm-block"></div>
                     <div>
-                        <div class="fs-1 fw-bold">@TotalClubs</div>
-                        <div class="text-uppercase small fw-bold opacity-75 letter-spacing-1">Vereine</div>
+                        <div class="display-6 fw-bolder mb-1">@TotalClubs</div>
+                        <div class="text-uppercase small fw-bold opacity-50 letter-spacing-2">Vereine</div>
                     </div>
                 </div>
             </div>
@@ -139,134 +281,146 @@
 
     @if (IsLoading)
     {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status"></div>
+        <div class="text-center py-5 my-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+            <p class="mt-3 text-muted fw-bold">Lade Rekorde...</p>
         </div>
     }
     else
     {
-        <h4 class="fw-bold text-dark mb-4 ms-2 fade-in-up"><i class="bi bi-trophy-fill text-warning me-2"></i>All-Time
-            Punkte-Giganten</h4>
-        <div class="row g-4 mb-5 fade-in-up">
-            <div class="col-lg-7">
-                <div class="stat-card h-100 d-flex flex-column justify-content-end p-0 overflow-hidden bg-light border-0">
-                    <div class="podium-container pt-5 mt-4">
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="stat-card fade-in-up delay-1 bg-white p-0 overflow-hidden">
+                    <div class="p-4 pb-0">
+                        <h4 class="fw-bold text-dark mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Die All-Time
+                            Punkte-Giganten</h4>
+                    </div>
+
+                    <div class="podium-container pt-5 mt-5 px-4 bg-light">
                         @if (TopPoints.Count >= 3)
                         {
-                            <div class="podium-step step-2 d-flex flex-column justify-content-start">
-                                <div class="avatar-circle"><i class="bi bi-person-fill text-secondary"></i></div>
-                                <span class="fw-bold fs-5 text-truncate px-1">@TopPoints[1].Firstname</span>
-                                <span class="small opacity-75">@TopPoints[1].Lastname</span>
-                                <span
-                                    class="badge bg-white text-dark mt-auto mb-2 fw-bolder fs-6 shadow-sm">@TopPoints[1].TotalPoints
-                                    Pkt.</span>
-                            </div>
-
-                            <div class="podium-step step-1 d-flex flex-column justify-content-start">
-                                <div class="avatar-circle" style="width: 80px; height: 80px; margin-top: -50px;"><i
-                                        class="bi bi-trophy-fill text-warning"></i></div>
-                                <span class="fw-bolder fs-4 text-truncate px-1">@TopPoints[0].Firstname</span>
-                                <span class="small opacity-75">@TopPoints[0].Lastname</span>
-                                <span
-                                    class="badge bg-dark text-warning mt-auto mb-3 fw-bolder fs-5 shadow-sm">@TopPoints[0].TotalPoints
-                                    Pkt.</span>
-                            </div>
-
-                            <div class="podium-step step-3 d-flex flex-column justify-content-start">
-                                <div class="avatar-circle"><i class="bi bi-person-fill text-white"></i></div>
-                                <span class="fw-bold fs-6 text-truncate px-1">@TopPoints[2].Firstname</span>
-                                <span class="small opacity-75">@TopPoints[2].Lastname</span>
-                                <span
-                                    class="badge bg-white text-dark mt-auto mb-2 fw-bolder fs-6 shadow-sm">@TopPoints[2].TotalPoints
-                                    Pkt.</span>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-5">
-                <div class="stat-card h-100">
-                    <h6 class="text-muted fw-bold text-uppercase mb-3 ps-2">Die Verfolger (Plätze 4 - 10)</h6>
-                    <ul class="list-group list-group-flush">
-                        @for (int i = 3; i < TopPoints.Count; i++)
-                        {
-                            var p = TopPoints[i];
-                            <li class="list-group-item d-flex justify-content-between align-items-center border-0 mb-1 rounded-3"
-                                style="background-color: #f8f9fa;">
-                                <div class="d-flex align-items-center">
-                                    <span class="fw-bold text-muted me-3" style="width: 25px;">@(i + 1).</span>
-                                    <span class="fw-bold text-dark">@p.Firstname @p.Lastname</span>
+                            <div class="podium-step step-2">
+                                <span class="rank-number-bg">2</span>
+                                <div class="avatar-circle"><i class="bi bi-person-fill"></i></div>
+                                <div class="podium-content">
+                                    <span class="podium-name text-truncate">@TopPoints[1].Firstname
+                                        @TopPoints[1].Lastname</span>
+                                    <span class="podium-club text-truncate"><i
+                                            class="bi bi-geo-alt-fill me-1 opacity-50"></i>@TopPoints[1].ClubName</span>
+                                    <span class="podium-badge badge-silver">@TopPoints[1].TotalPoints Pkt.</span>
                                 </div>
-                                <span class="badge bg-secondary rounded-pill">@p.TotalPoints Pkt.</span>
-                            </li>
+                            </div>
+                            <div class="podium-step step-1" style="transform: scale(1.05); z-index: 10;">
+                                <span class="rank-number-bg">1</span>
+                                <div class="avatar-circle"
+                                    style="width: 90px; height: 90px; margin-top: -70px; font-size: 2.5rem;"><i
+                                        class="bi bi-trophy-fill"></i></div>
+                                <div class="podium-content">
+                                    <span class="podium-name fs-4 text-truncate">@TopPoints[0].Firstname
+                                        @TopPoints[0].Lastname</span>
+                                    <span class="podium-club fs-6 text-truncate"><i
+                                            class="bi bi-geo-alt-fill me-1 opacity-50"></i>@TopPoints[0].ClubName</span>
+                                    <span class="podium-badge badge-gold fs-5 mt-2">@TopPoints[0].TotalPoints Pkt.</span>
+                                </div>
+                            </div>
+                            <div class="podium-step step-3">
+                                <span class="rank-number-bg">3</span>
+                                <div class="avatar-circle"><i class="bi bi-person-fill"></i></div>
+                                <div class="podium-content">
+                                    <span class="podium-name text-truncate">@TopPoints[2].Firstname
+                                        @TopPoints[2].Lastname</span>
+                                    <span class="podium-club text-truncate"><i
+                                            class="bi bi-geo-alt-fill me-1 opacity-50"></i>@TopPoints[2].ClubName</span>
+                                    <span class="podium-badge badge-bronze">@TopPoints[2].TotalPoints Pkt.</span>
+                                </div>
+                            </div>
                         }
-                    </ul>
+                    </div>
+
+                    <div class="p-4 bg-white">
+                        <h6 class="text-muted fw-bold text-uppercase mb-3 small letter-spacing-1">Das Verfolgerfeld (Plätze
+                            4 - 10)</h6>
+                        <ul class="list-group list-group-flush">
+                            @for (int i = 3; i < TopPoints.Count; i++)
+                            {
+                                var p = TopPoints[i];
+                                <li class="list-group-item-custom d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center text-truncate pe-2">
+                                        <span class="rank-badge">@(i + 1)</span>
+                                        <div>
+                                            <span class="fw-bold text-dark d-block text-truncate">@p.Firstname
+                                                @p.Lastname</span>
+                                            <span class="small text-muted text-truncate"><i
+                                                    class="bi bi-geo-alt me-1 opacity-75"></i>@p.ClubName</span>
+                                        </div>
+                                    </div>
+                                    <span class="fw-bolder text-dark fs-6">@p.TotalPoints</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row g-4 fade-in-up" style="animation-delay: 0.2s;">
-
-            <div class="col-md-6">
-                <div class="stat-card h-100">
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle me-3">
-                            <i class="bi bi-calendar2-check-fill fs-4"></i>
-                        </div>
+            <div class="col-xl-4 d-flex flex-column gap-4">
+                <div class="stat-card fade-in-up delay-2">
+                    <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-4 me-3"><i
+                                class="bi bi-fire fs-4"></i></div>
                         <div>
-                            <h4 class="fw-bold text-dark mb-0">Die Dauerbrenner</h4>
-                            <span class="text-muted small">Meiste gespielte Turniere überhaupt</span>
+                            <h5 class="fw-bold text-dark mb-0">Die Dauerbrenner</h5><span class="text-muted small">Meiste
+                                Turnierteilnahmen</span>
                         </div>
                     </div>
-                    <ul class="list-group list-group-flush">
+                    <ul class="list-group list-group-flush pe-1 glass-scroll" style="max-height: 300px; overflow-y: auto;">
                         @for (int i = 0; i < TopGames.Count; i++)
                         {
                             var p = TopGames[i];
-                            <li class="list-group-item px-0 d-flex justify-content-between align-items-center border-light">
-                                <div class="d-flex align-items-center">
-                                    <span class="fw-bold text-primary me-3">@(i + 1).</span>
-                                    <div>
-                                        <span class="fw-bold text-dark d-block">@p.Firstname @p.Lastname</span>
-                                        <span class="small text-muted"><i class="bi bi-geo-alt-fill me-1"></i>@p.ClubName</span>
+                            <li
+                                class="list-group-item border-0 px-0 py-2 d-flex justify-content-between align-items-center mb-1">
+                                <div class="d-flex align-items-center text-truncate pe-2">
+                                    <span class="fw-bold @(i < 3 ? "text-primary" : "text-muted") me-3"
+                                        style="width: 20px;">@(i + 1).</span>
+                                    <div class="text-truncate">
+                                        <span class="fw-bold text-dark d-block text-truncate"
+                                            style="font-size: 0.95rem;">@p.Firstname @p.Lastname</span>
+                                        <span class="small text-muted text-truncate">@p.ClubName</span>
                                     </div>
                                 </div>
-                                <span class="badge bg-primary rounded-pill px-3 py-2">@p.TotalGames Turniere</span>
+                                <span
+                                    class="badge bg-primary bg-opacity-10 text-primary rounded-pill fw-bold px-3">@p.TotalGames
+                                    x</span>
                             </li>
                         }
                     </ul>
                 </div>
-            </div>
 
-            <div class="col-md-6">
-                <div class="stat-card bg-dark text-white h-100">
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="bg-white bg-opacity-10 text-warning p-3 rounded-circle me-3">
-                            <i class="bi bi-buildings-fill fs-4"></i>
-                        </div>
+                <div class="stat-card stat-card-dark fade-in-up delay-2">
+                    <div class="d-flex align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25">
+                        <div class="bg-warning bg-opacity-25 text-warning p-3 rounded-4 me-3"><i
+                                class="bi bi-buildings-fill fs-4"></i></div>
                         <div>
-                            <h4 class="fw-bold mb-0">Größte Schach-Hochburgen</h4>
-                            <span class="text-white-50 small">Vereine mit den meisten Spielern</span>
+                            <h5 class="fw-bold mb-0">Top Vereine</h5><span class="text-white-50 small">Meiste
+                                unterschiedliche Spieler</span>
                         </div>
                     </div>
-                    <ul class="list-group list-group-flush">
+                    <ul class="list-group list-group-flush pe-1 glass-scroll" style="max-height: 300px; overflow-y: auto;">
                         @for (int i = 0; i < TopClubs.Count; i++)
                         {
                             var c = TopClubs[i];
                             <li
-                                class="list-group-item bg-transparent text-white px-0 d-flex justify-content-between align-items-center border-secondary">
-                                <div class="d-flex align-items-center">
-                                    <span class="fw-bold text-warning me-3">@(i + 1).</span>
-                                    <span class="fw-bold">@c.Name</span>
+                                class="list-group-item bg-transparent border-0 px-0 py-2 d-flex justify-content-between align-items-center mb-1">
+                                <div class="d-flex align-items-center text-truncate pe-2">
+                                    <span class="fw-bold @(i < 3 ? "text-warning" : "text-white-50") me-3"
+                                        style="width: 20px;">@(i + 1).</span>
+                                    <span class="fw-bold text-white text-truncate">@c.Name</span>
                                 </div>
-                                <span class="badge bg-light text-dark rounded-pill px-3 py-2 fw-bold">@c.PlayerCount
-                                    Spieler</span>
+                                <span class="badge bg-warning text-dark rounded-pill fw-bolder px-3">@c.PlayerCount</span>
                             </li>
                         }
                     </ul>
                 </div>
             </div>
-
         </div>
     }
 </div>
@@ -280,60 +434,45 @@
         public int TotalGames { get; set; }
     }
     private class ClubStat { public string Name { get; set; } = ""; public int PlayerCount { get; set; } }
-
     private bool IsLoading = true;
-
-    // Globale Statistiken für den Header
-    private int TotalPlayers = 0;
-    private int TotalGames = 0;
-    private int TotalClubs = 0;
-
-    // Listen für die Anzeigen
-    private List<PlayerStat> TopPoints = new();
-    private List<PlayerStat> TopGames = new();
-    private List<ClubStat> TopClubs = new();
+    private int TotalPlayers = 0; private int TotalGames = 0; private int TotalClubs = 0;
+    private List<PlayerStat> TopPoints = new(); private List<PlayerStat> TopGames = new(); private List<ClubStat> TopClubs =
+    new();
 
     protected override async Task OnInitializedAsync()
     {
+        // (Simulierter Delay für die Animation beim Testen - kann später raus)
+        // await Task.Delay(500);
+
         using var db = await DbFactory.CreateDbContextAsync();
-
-        // Alle Spieler laden, die mindestens ein Turnier gespielt haben
-        var allPlayers = await db.Players.Include(p => p.Club).Include(p => p.PlayerTournaments).Where(p =>
+        var allPlayers = await db.Players.AsNoTracking().Include(p => p.Club).Include(p => p.PlayerTournaments).Where(p =>
         p.PlayerTournaments.Any()).ToListAsync();
-        var allClubs = await db.Clubs.Include(c => c.Players).ToListAsync();
+        var allClubs = await db.Clubs.AsNoTracking().Include(c => c.Players).ToListAsync();
 
-        // Header Statistiken berechnen
         TotalPlayers = allPlayers.Count;
         TotalGames = allPlayers.Sum(p => p.PlayerTournaments.Count);
         TotalClubs = allClubs.Count;
 
-        // Top 10 Punkte
-        TopPoints = allPlayers.OrderByDescending(p => p.PlayerTournaments.Sum(t => t.Points)).Take(10).Select(p => new
-        PlayerStat
+        TopPoints = allPlayers.OrderByDescending(p => p.PlayerTournaments.Sum(t => t.Points)).ThenBy(p => p.Lastname).Take(10)
+        .Select(p => new PlayerStat
         {
             Firstname = p.Firstname,
             Lastname = p.Lastname,
             ClubName = p.Club?.Name ?? "Vereinslos",
-            TotalPoints =
-        p.PlayerTournaments.Sum(t => t.Points)
+            TotalPoints = p.PlayerTournaments.Sum(t => t.Points)
         }).ToList();
 
-        // Top 10 Dauerbrenner (Meiste Turniere)
-        TopGames = allPlayers.OrderByDescending(p => p.PlayerTournaments.Count).Take(10).Select(p => new PlayerStat
+        TopGames = allPlayers.OrderByDescending(p => p.PlayerTournaments.Count).ThenBy(p => p.Lastname).Take(10)
+        .Select(p => new PlayerStat
         {
-            Firstname
-        = p.Firstname,
+            Firstname = p.Firstname,
             Lastname = p.Lastname,
             ClubName = p.Club?.Name ?? "Vereinslos",
             TotalGames = p.PlayerTournaments.Count
         }).ToList();
 
-        // Top 10 Vereine
-        TopClubs = allClubs.OrderByDescending(c => c.Players.Count).Take(10).Select(c => new ClubStat
-        {
-            Name = c.Name,
-            PlayerCount = c.Players.Count
-        }).ToList();
+        TopClubs = allClubs.OrderByDescending(c => c.Players.Count).ThenBy(c => c.Name).Take(10)
+        .Select(c => new ClubStat { Name = c.Name, PlayerCount = c.Players.Count }).ToList();
 
         IsLoading = false;
     }
