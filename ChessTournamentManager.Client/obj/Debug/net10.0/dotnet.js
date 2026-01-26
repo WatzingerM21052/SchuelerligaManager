@@ -5,7 +5,7 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
   "mainAssemblyName": "ChessTournamentManager.Client",
   "applicationEnvironment": "Development",
   "resources": {
-    "hash": "sha256-crBnlXcFSK0mWdzE9OSFnCyHdoYYRy+IGMI+k9qA7OI=",
+    "hash": "sha256-kEbqQI5/xOZ67FfYLfZg418yiVPrAsE7aM3deEExKgo=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.q1f8adzkja.js"
@@ -1314,28 +1314,28 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
       },
       {
         "virtualPath": "ChessTournamentManager.Shared.wasm",
-        "name": "ChessTournamentManager.Shared.k28rdtrcag.wasm",
-        "integrity": "sha256-nNJwEM2jyakVkyM6c+uc4DTbRI53ye+Qemg7mBhZPeE=",
+        "name": "ChessTournamentManager.Shared.ndvm9x0s9r.wasm",
+        "integrity": "sha256-WxX6xW7SNvAy2yuREAX+fIED7cXdIpPTyp5g4wrF4rM=",
         "cache": "force-cache"
       },
       {
         "virtualPath": "ChessTournamentManager.Client.wasm",
-        "name": "ChessTournamentManager.Client.l9uyb3zvud.wasm",
-        "integrity": "sha256-R2vidnXHp1qmzHuJ9DA1P20nu30610ctwXZTfVK8JY0=",
+        "name": "ChessTournamentManager.Client.v27v5zhm4r.wasm",
+        "integrity": "sha256-aanrNrX88qbh45iUuMmTi4ARsBBl/WojlUOUX1Nori8=",
         "cache": "force-cache"
       }
     ],
     "pdb": [
       {
         "virtualPath": "ChessTournamentManager.Shared.pdb",
-        "name": "ChessTournamentManager.Shared.blhsqyr6z6.pdb",
-        "integrity": "sha256-D5ofkgFTIiED9JzBzyTIf077vTokmuZC619tK+dOXjs=",
+        "name": "ChessTournamentManager.Shared.50rh1u3ku8.pdb",
+        "integrity": "sha256-C1RygXtCzt6Om6e4NbL77HaLI08t6F7hF1u/F1IIQF8=",
         "cache": "force-cache"
       },
       {
         "virtualPath": "ChessTournamentManager.Client.pdb",
-        "name": "ChessTournamentManager.Client.1ih2o71g5i.pdb",
-        "integrity": "sha256-GWnTDgiA1p1muxtpuQ4HWK+DxSFF9SaezgRnwMmN35w=",
+        "name": "ChessTournamentManager.Client.amwy5nobo5.pdb",
+        "integrity": "sha256-ovof/ykYQ1l75kBNfnFBbEW9nEVb4RZ0OcgcGRs7W9Y=",
         "cache": "force-cache"
       }
     ],
