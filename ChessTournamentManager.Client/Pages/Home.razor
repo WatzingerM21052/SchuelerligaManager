@@ -12,7 +12,6 @@
 <PageTitle>System & Import</PageTitle>
 
 <style>
-    /* Hintergrund: Jetzt fixiert (fixed), bewegt sich beim Scrollen nicht mit */
     .cosmic-bg {
         background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
         background-size: 400% 400%;
@@ -48,7 +47,6 @@
         box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     }
 
-    /* Dynamische Dropzone */
     .magic-dropzone {
         border: 3px dashed rgba(13, 110, 253, 0.4);
         border-radius: 14px;
@@ -74,7 +72,6 @@
         z-index: 10;
     }
 
-    /* Button */
     .btn-super {
         background: linear-gradient(135deg, #198754 0%, #20c997 100%);
         border: none;
@@ -96,7 +93,6 @@
         transform: none;
     }
 
-    /* Die neue Glas-Scrollbar für die Dateiliste */
     .glass-scroll::-webkit-scrollbar {
         width: 8px;
     }
@@ -116,7 +112,6 @@
         background: rgba(13, 110, 253, 0.5);
     }
 
-    /* Eigene Klasse für die Eingabefelder im Import */
     .pro-input {
         background-color: #fff;
         border: 2px solid rgba(0, 0, 0, 0.08);
@@ -126,6 +121,23 @@
     .pro-input:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+
+    /* Animation für das Modal */
+    .modal-bounce {
+        animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @@keyframes bounceIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
     }
 </style>
 
@@ -206,7 +218,6 @@
                             <div class="mb-4">
                                 <span class="text-dark fw-bold d-block mb-2"><i class="bi bi-files text-secondary me-1"></i>
                                     Erkannte Dateien (@PendingImports.Count):</span>
-
                                 <div class="list-group glass-scroll" style="max-height: 250px; overflow-y: auto;">
                                     @foreach (var import in PendingImports)
                                     {
@@ -280,8 +291,9 @@
                             <button class="btn btn-outline-light shadow-sm flex-grow-1"
                                 @onclick="() => LoadFromBrowserCache(false)" disabled="@IsAutoLoading"><i
                                     class="bi bi-cloud-download me-1"></i> Laden</button>
-                            <button class="btn btn-outline-danger shadow-sm" @onclick="DeleteBrowserCache"
-                                disabled="@IsAutoLoading"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-outline-danger shadow-sm" @onclick="ShowDeleteModal"
+                                disabled="@IsAutoLoading" title="Browser-Cache leeren"><i
+                                    class="bi bi-trash"></i></button>
                         </div>
                     </div>
 
@@ -300,6 +312,38 @@
     </div>
 </div>
 
+@if (showDeleteModal)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+        style="background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered modal-bounce">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header bg-danger text-white border-0"
+                    style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Lokalen Speicher
+                        löschen?</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="HideDeleteModal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <p class="mb-0 fw-bold text-dark fs-5">Bist du sicher?</p>
+                    <p class="text-muted mt-2 mb-0">Dies entfernt <b>alle</b> Turniere, Punkte und Spieler von diesem Gerät.
+                        Dieser Vorgang kann nicht rückgängig gemacht werden.</p>
+                    <div class="alert alert-warning border-0 mt-3 mb-0 d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2"></i> Vergiss nicht, vorher ein PC-Backup zu machen!
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light"
+                    style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                    <button type="button" class="btn btn-secondary fw-bold" @onclick="HideDeleteModal">Abbrechen</button>
+                    <button type="button" class="btn btn-danger fw-bold shadow-sm px-4"
+                        @onclick="ConfirmDeleteBrowserCache"><i class="bi bi-trash-fill me-1"></i> Ja, endgültig
+                        löschen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private class PendingImport
     {
@@ -311,6 +355,9 @@
     private string SuccessMessage = ""; private string ErrorMessage = ""; private bool IsAutoLoading = false;
     private string MasterTournamentName = ""; private DateTime MasterTournamentDate = DateTime.Now.Date;
     private const int MAX_FILE_COUNT = 200; private const long MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+    // NEUE VARIABLE FÜR DAS MODAL
+    private bool showDeleteModal = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -354,18 +401,27 @@
                 "Laden fehlgeschlagen: " + ex.Message;
         }
     }
-    private async Task DeleteBrowserCache()
+
+    // MODAL-STEUERUNG
+    private void ShowDeleteModal() => showDeleteModal = true;
+    private void HideDeleteModal() => showDeleteModal = false;
+
+    // DIE EIGENTLICHE LÖSCH-FUNKTION (Wird vom roten Button im Modal getriggert)
+    private async Task ConfirmDeleteBrowserCache()
     {
+        showDeleteModal = false; // Modal sofort schließen
         try
         {
             await JS.InvokeVoidAsync("window.browserStorage.deleteDb");
-            SuccessMessage = "Der Browser-Cache wurde erfolgreich gelöscht."; StateHasChanged();
+            SuccessMessage = "Der Browser-Cache wurde erfolgreich gelöscht.";
+            StateHasChanged();
         }
         catch (Exception ex)
         {
             ErrorMessage = "Löschen fehlgeschlagen: " + ex.Message;
         }
     }
+
     private async Task LoadDbFromFile(InputFileChangeEventArgs e)
     {
         try
