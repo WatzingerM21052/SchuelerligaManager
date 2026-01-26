@@ -1,49 +1,32 @@
 @page "/daten-detektiv"
 @using ChessTournamentManager.Shared.Models
 @using Microsoft.EntityFrameworkCore
+@using System.Text.Json
 @inject IDbContextFactory<ChessDbContext> DbFactory
 @inject IJSRuntime JS
 
 <PageTitle>Daten-Detektiv</PageTitle>
 
 <style>
-    .cosmic-bg {
-        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: -1;
+    .hof-header {
+        background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+        color: white;
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 10px 30px rgba(13, 110, 253, 0.15);
+        margin-bottom: 2rem;
     }
 
-    @@keyframes gradientBG {
-        0% {
-            background-position: 0% 50%;
-        }
-
-        50% {
-            background-position: 100% 50%;
-        }
-
-        100% {
-            background-position: 0% 50%;
-        }
-    }
-
-    .glass-card {
-        background: rgba(255, 255, 255, 0.92);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        border-radius: 18px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
     .glass-scroll::-webkit-scrollbar {
-        width: 8px;
+        width: 6px;
     }
 
     .glass-scroll::-webkit-scrollbar-track {
@@ -51,179 +34,489 @@
     }
 
     .glass-scroll::-webkit-scrollbar-thumb {
-        background: rgba(13, 110, 253, 0.3);
+        background: rgba(0, 0, 0, 0.1);
         border-radius: 4px;
     }
 
-    .btn-super {
-        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
-        border: none;
-        color: white;
-        border-radius: 12px;
-        font-weight: 700;
-        box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
-        transition: all 0.2s;
+    /* Animationen */
+    .fade-out {
+        animation: fadeOut 0.5s forwards;
     }
 
-    .btn-super:hover {
-        transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+    @@keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        to {
+            opacity: 0;
+            transform: translateX(50px);
+        }
+    }
+
+    .bounce-in {
+        animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @@keyframes bounceIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
     }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script>window.triggerMergeConfetti = () => { confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 }, colors: ['#0d6efd', '#ffc107'] }); };</script>
+<script>window.triggerMergeConfetti = () => { confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ['#0d6efd', '#ffc107', '#198754'] }); };</script>
 
-<div>
-    <div class="cosmic-bg"></div>
+<div class="container-fluid pb-5 px-4">
 
-    <div class="container-fluid px-4 py-3 position-relative z-1">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="hof-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="fw-bold text-dark mb-0 text-shadow"><i
-                        class="bi bi-search text-primary me-2"></i>Daten-Detektiv</h2>
-                <span class="text-muted small">Intelligente Erkennung und Bereinigung von Spieler-Duplikaten.</span>
+                <h1 class="fw-bolder display-5 mb-2"><i class="bi bi-search me-3"></i>Daten-Detektiv</h1>
+                <p class="fs-5 opacity-90 fw-light mb-0">KI-gestützte Erkennung von Schreibfehlern und Duplikaten.</p>
             </div>
-            <button class="btn btn-dark fw-bold shadow-sm rounded-pill" @onclick="AnalyzeDatabase"
-                disabled="@IsSearching"><i class="bi bi-arrow-clockwise me-1"></i> Neu scannen</button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-light fw-bold shadow-sm rounded-pill px-3 py-2" @onclick="ResetMemory"
+                    title="Vergessene Matches wieder anzeigen" disabled="@IsSearching">
+                    <i class="bi bi-trash3-fill me-1"></i> Gedächtnis löschen
+                </button>
+                <button class="btn btn-light text-primary fw-bold shadow-sm rounded-pill px-4 py-2"
+                    @onclick="AnalyzeDatabase" disabled="@IsSearching">
+                    <i class="bi bi-arrow-clockwise me-1"></i> @(IsSearching ? "Scanne..." : "Neu scannen")
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <div class="alert alert-success border-0 shadow-lg fw-bold rounded-4 mb-4 d-flex align-items-center bounce-in">
+            <i class="bi bi-check-circle-fill fs-4 me-2"></i> @SuccessMessage
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger border-0 shadow-lg fw-bold rounded-4 mb-4 d-flex align-items-center bounce-in">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i> @ErrorMessage
+        </div>
+    }
+
+    <div class="stat-card p-4">
+        <div class="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-1"><i class="bi bi-robot text-primary me-2"></i>Fuzzy-Matches gefunden
+                    (@DuplicateGroups.Count)</h4>
+                <p class="text-muted small mb-0">Das System sucht nach phonetischer Ähnlichkeit, Drehern und Teilnamen.
+                </p>
+            </div>
+            @if (IgnoredSignatures.Count > 0)
+            {
+                <span class="badge bg-secondary rounded-pill py-2 px-3 fw-bold shadow-sm" style="font-size: 0.8rem;">
+                    <i class="bi bi-eye-slash-fill me-1"></i> @IgnoredSignatures.Count Kombinationen ignoriert
+                </span>
+            }
         </div>
 
-        @if (!string.IsNullOrEmpty(SuccessMessage))
+        @if (IsSearching)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted fw-bold">Der Algorithmus vergleicht Datensätze...</p>
+            </div>
+        }
+        else if (!DuplicateGroups.Any())
         {
             <div
-                class="alert alert-success border-0 shadow-lg fw-bold rounded-4">@SuccessMessage</div>
+                class="alert alert-info bg-info bg-opacity-10 border-0 rounded-4 text-center py-5 fw-bold text-info shadow-sm bounce-in">
+                <i class="bi bi-check-circle-fill display-4 d-block mb-3"></i>
+                Die Datenbank ist blitzsauber! Keine neuen Duplikate gefunden.
+            </div>
         }
+        else
+        {
+            <div class="glass-scroll pe-2" style="max-height: 600px; overflow-y: auto;">
+                @foreach (var group in DuplicateGroups)
+                {
+                    <div class="bg-light p-3 rounded-4 shadow-sm mb-4 border @(group.IsIgnored ? "fade-out" : "")"
+                        style="@(group.IsIgnored ? "pointer-events: none;" : "")">
 
-        <div class="row">
-            <div class="col-md-12">
-                <div class="glass-card p-4">
-                    <h5 class="fw-bold text-dark mb-3"><i
-                            class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Gefundene Duplikate
-                        (@DuplicateGroups.Count)</h5>
-                    <p class="text-muted small mb-4">Folgende Spieler scheinen doppelt angelegt zu sein. Wähle aus,
-                        welcher Eintrag <b>behalten</b> werden soll. Die Turnierdaten des anderen werden auf den
-                        Behaltenen übertragen.</p>
-
-                    @if (IsSearching)
-                    {
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <p class="mt-2 text-muted fw-bold">Analysiere Datenbank...</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-warning text-dark fs-6 me-2 shadow-sm"><i class="bi bi-magic me-1"></i>
+                                    Match</span>
+                                <h5 class="fw-bold text-dark mb-0">@group.Key</h5>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-dark fw-bold shadow-sm"
+                                    @onclick="() => OpenCustomMergeModal(group)">
+                                    <i class="bi bi-pencil-fill me-1"></i> Eigener Name...
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm"
+                                    @onclick="() => IgnoreGroup(group)">
+                                    <i class="bi bi-eye-slash-fill me-1"></i> Ignorieren (Dauerhaft merken)
+                                </button>
+                            </div>
                         </div>
-                    }
-                    else if (!DuplicateGroups.Any())
-                    {
 
-                        <div
-                            class="alert alert-info border-0 shadow-sm rounded-4 text-center py-4 fw-bold"><i
-                                class="bi bi-check-circle-fill fs-3 d-block mb-2 text-success"></i>Die Datenbank ist
-                            blitzsauber! Keine Duplikate gefunden.</div>
-                    }
-                    else
-                    {
-                        <div class="glass-scroll pe-2" style="max-height: 60vh; overflow-y: auto;">
-                            @foreach (var group in DuplicateGroups)
-                            {
-                                <div class="bg-light p-3 rounded-4 shadow-sm mb-3 border">
-                                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-person-fill text-secondary me-1"></i>
-                                        @group.Key (Gleicher Name, verschiedene Einträge)</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm align-middle mb-0">
-                                            <thead>
-                                                <tr class="text-muted small">
-                                                    <th>ID</th>
-                                                    <th>Verein</th>
-                                                    <th>Punkte ges.</th>
-                                                    <th>Spiele</th>
-                                                    <th>Aktion</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (var p in group.Players)
-                                                {
-                                                    <tr>
-                                                        <td><span class="badge bg-secondary">#@p.PlayerId</span></td>
-                                                        <td>@(p.Club?.Name ?? "Vereinslos")</td>
-                                                        <td class="fw-bold text-success">@p.PlayerTournaments.Sum(pt => pt.Points)
-                                                        </td>
-                                                        <td>@p.PlayerTournaments.Count Runden</td>
-                                                        <td class="text-end">
-                                                            <button class="btn btn-sm btn-outline-primary fw-bold"
-                                                                @onclick="() => MergePlayers(group.Players, p)"><i
-                                                                    class="bi bi-node-plus-fill me-1"></i> Diesen behalten & andere
-                                                                verschmelzen</button>
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            }
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 bg-white shadow-sm rounded-3 overflow-hidden">
+                                <thead class="table-light">
+                                    <tr class="text-muted small fw-bold">
+                                        <th class="ps-3">ID</th>
+                                        <th>Name in DB</th>
+                                        <th>Verein</th>
+                                        <th>Punkte</th>
+                                        <th>Spiele</th>
+                                        <th class="text-end pe-3">Aktion</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in group.Players)
+                                    {
+                                        <tr>
+                                            <td class="ps-3"><span class="badge bg-secondary">#@p.PlayerId</span></td>
+                                            <td class="fw-bold text-dark fs-6">@p.Firstname @p.Lastname</td>
+                                            <td class="small text-muted">@(p.Club?.Name ?? "- Vereinslos -")</td>
+                                            <td class="fw-bold text-success">@p.TotalPoints</td>
+                                            <td><span class="badge bg-light text-dark border">@p.TournamentCount Runden</span></td>
+                                            <td class="text-end pe-3">
+                                                <button class="btn btn-sm btn-primary fw-bold px-3 shadow-sm"
+                                                    @onclick="() => MergePlayersIntoSurvivor(group, p.PlayerId)"
+                                                    disabled="@IsMerging">
+                                                    <i class="bi bi-arrow-down-circle-fill me-1"></i> Genau diesen behalten
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
-                    }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@if (showCustomMergeModal && selectedGroup != null)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+        style="background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered bounce-in">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header bg-dark text-white border-0"
+                    style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2 text-warning"></i> Spieler bearbeiten
+                        & verschmelzen</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseCustomMergeModal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <p class="text-muted small mb-3">Wie soll der Spieler nach der Verschmelzung korrekt heißen?</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="fw-bold mb-1">Vorname:</label>
+                            <input type="text" class="form-control form-control-lg fw-bold" @bind="customFirstName"
+                                placeholder="z.B. Julian" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="fw-bold mb-1">Nachname:</label>
+                            <input type="text" class="form-control form-control-lg fw-bold" @bind="customLastName"
+                                placeholder="z.B. Baumgartner" />
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning border-0 mt-4 mb-0 d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                        <span style="font-size: 0.9rem;">Die @(selectedGroup.Players.Count) Datensätze werden unter diesem
+                            Namen vereint.</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light"
+                    style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                    <button type="button" class="btn btn-secondary fw-bold"
+                        @onclick="CloseCustomMergeModal">Abbrechen</button>
+                    <button type="button" class="btn btn-success fw-bold shadow-sm px-4" @onclick="MergePlayersCustom"
+                        disabled="@(string.IsNullOrWhiteSpace(customFirstName) || string.IsNullOrWhiteSpace(customLastName))">
+                        <i class="bi bi-magic me-1"></i> Speichern & Zusammenführen
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
 
 @code {
+    private class PlayerDto
+    {
+        public int PlayerId { get; set; }
+        public string Firstname { get; set; } = ""; public string
+    Lastname
+        { get; set; } = ""; public Club? Club { get; set; }
+        public int TournamentCount { get; set; }
+        public double
+    TotalPoints
+        { get; set; }
+    }
     private class DuplicateGroup
     {
-        public string Key { get; set; } = ""; public List<Player> Players { get; set; } = new();
+        public string Key { get; set; } = ""; public bool IsIgnored { get; set; } = false; public
+    List<PlayerDto> Players
+        { get; set; } = new();
     }
+
     private List<DuplicateGroup> DuplicateGroups = new();
     private bool IsSearching = false;
+    private bool IsMerging = false;
     private string SuccessMessage = "";
+    private string ErrorMessage = "";
 
-    protected override async Task OnInitializedAsync() => await AnalyzeDatabase();
+    // Langzeitgedächtnis für ignorierte Kombinationen
+    private HashSet<string> IgnoredSignatures = new();
+    private const string LOCAL_STORAGE_KEY = "ignored_duplicate_groups";
+
+    // Modal-Variablen
+    private bool showCustomMergeModal = false;
+    private DuplicateGroup? selectedGroup = null;
+    private string customFirstName = "";
+    private string customLastName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. Gedächtnis laden, bevor gescannt wird
+        try
+        {
+            var savedIgnoredJson = await JS.InvokeAsync<string>("localStorage.getItem", LOCAL_STORAGE_KEY);
+            if (!string.IsNullOrEmpty(savedIgnoredJson))
+            {
+                var loaded = JsonSerializer.Deserialize<List<string>>(savedIgnoredJson);
+                if (loaded != null) IgnoredSignatures = new HashSet<string>(loaded);
+            }
+        }
+        catch { /* Ignorieren bei Fehlern im Speicher */ }
+
+        await AnalyzeDatabase();
+    }
+
+    // Erstellt eine eindeutige "Signatur" aus den IDs der Gruppe (z.B. "12_45")
+    private string GetGroupSignature(IEnumerable<PlayerDto> players)
+    {
+        var sortedIds = players.Select(p => p.PlayerId).OrderBy(id => id);
+        return string.Join("_", sortedIds);
+    }
+
+    // Speichert das aktuelle Gedächtnis im Browser
+    private async Task SaveMemory()
+    {
+        var json = JsonSerializer.Serialize(IgnoredSignatures.ToList());
+        await JS.InvokeVoidAsync("localStorage.setItem", LOCAL_STORAGE_KEY, json);
+    }
+
+    // Setzt das Gedächtnis zurück (falls man sich mal verklickt hat)
+    private async Task ResetMemory()
+    {
+        IgnoredSignatures.Clear();
+        await JS.InvokeVoidAsync("localStorage.removeItem", LOCAL_STORAGE_KEY);
+        SuccessMessage = "Das Gedächtnis wurde gelöscht. Alle ignorierten Kombinationen werden wieder gescannt.";
+        await AnalyzeDatabase();
+    }
+
+
+    // PHONETISCHE NORMALISIERUNG
+    private string ToPhoneticBase(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var s = text.ToLowerInvariant().Trim();
+        s = s.Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("ß", "ss");
+        s = s.Replace("ph", "f").Replace("y", "i").Replace("th", "t").Replace("dt", "t");
+        s = s.Replace(" ", "").Replace("-", "").Replace(".", "");
+
+        var result = new System.Text.StringBuilder();
+        char lastChar = '\0';
+        foreach (char c in s) { if (c != lastChar) result.Append(c); lastChar = c; }
+        return result.ToString();
+    }
+
+    // LEVENSHTEIN DISTANZ
+    private int ComputeLevenshteinDistance(string s, string t)
+    {
+        int[,] d = new int[s.Length + 1, t.Length + 1];
+        for (int i = 0; i <= s.Length; d[i, 0] = i++) ;
+        for (int j = 0; j <= t.Length; d[0, j] = j++) ;
+        for (int i = 1; i <= s.Length; i++)
+        {
+            for (int j = 1; j <= t.Length; j++)
+            {
+                int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
+                d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
+            }
+        }
+        return d[s.Length, t.Length];
+    }
+
+    // DER ALGORITHMUS
+    private bool AreSimilar(Player p1, Player p2)
+    {
+        string f1 = p1.Firstname.ToLower().Trim(); string l1 = p1.Lastname.ToLower().Trim();
+        string f2 = p2.Firstname.ToLower().Trim(); string l2 = p2.Lastname.ToLower().Trim();
+
+        if (f1 == f2 && l1 == l2) return true;
+        if (f1 == l2 && l1 == f2) return true;
+
+        string sound1_normal = ToPhoneticBase(f1 + l1);
+        string sound2_normal = ToPhoneticBase(f2 + l2);
+        string sound2_swapped = ToPhoneticBase(l2 + f2);
+
+        if (sound1_normal.Contains(sound2_normal) || sound2_normal.Contains(sound1_normal)) return true;
+        if (sound1_normal.Contains(sound2_swapped) || sound2_swapped.Contains(sound1_normal)) return true;
+
+        int distNormal = ComputeLevenshteinDistance(sound1_normal, sound2_normal);
+        int distSwapped = ComputeLevenshteinDistance(sound1_normal, sound2_swapped);
+        int bestDist = Math.Min(distNormal, distSwapped);
+        int maxLength = Math.Max(sound1_normal.Length, Math.Max(sound2_normal.Length, sound2_swapped.Length));
+
+        if (bestDist <= 4 || (double)bestDist / maxLength <= 0.35) return true;
+
+        return false;
+    }
 
     private async Task AnalyzeDatabase()
     {
-        IsSearching = true; SuccessMessage = ""; StateHasChanged();
+        IsSearching = true; SuccessMessage = ""; ErrorMessage = ""; StateHasChanged();
+        await Task.Delay(500); // UI Atempause
+
         using var db = await DbFactory.CreateDbContextAsync();
         var allPlayers = await db.Players.Include(p => p.Club).Include(p => p.PlayerTournaments).ToListAsync();
 
-        // Gruppiert nach normalisiertem Vor- und Nachnamen (alles klein, getrimmt)
-        DuplicateGroups = allPlayers
-        .GroupBy(p => (p.Firstname.ToLower().Trim() + " " + p.Lastname.ToLower().Trim()))
-        .Where(g => g.Count() > 1)
-        .Select(g => new DuplicateGroup
+        var clusters = new List<List<Player>>();
+
+        foreach (var player in allPlayers)
         {
-            Key = g.First().Firstname + " " + g.First().Lastname,
-            Players = g.OrderByDescending(p
-        => p.PlayerTournaments.Count).ToList()
+            bool addedToCluster = false;
+            foreach (var cluster in clusters)
+            {
+                var rep = cluster.First();
+                if (AreSimilar(player, rep)) { cluster.Add(player); addedToCluster = true; break; }
+            }
+            if (!addedToCluster) clusters.Add(new List<Player> { player });
+        }
+
+        // NEU: HIER FILTERN WIR DAS LANGZEITGEDÄCHTNIS RAUS!
+        DuplicateGroups = clusters
+        .Where(c => c.Count > 1)
+        .Select(c => new DuplicateGroup
+        {
+            Key = $"{c.First().Firstname} {c.First().Lastname} (und Ähnliche)",
+            Players = c.Select(p => new PlayerDto
+            {
+                PlayerId = p.PlayerId,
+                Firstname = p.Firstname,
+                Lastname = p.Lastname,
+                Club = p.Club,
+                TournamentCount = p.PlayerTournaments.Count,
+                TotalPoints = p.PlayerTournaments.Sum(t => t.Points)
+            }).OrderByDescending(p => p.TournamentCount).ThenByDescending(p => p.TotalPoints).ToList()
         })
+        // Ist die Signatur dieser Gruppe schon im Gedächtnis? Dann nicht mehr anzeigen!
+        .Where(g => !IgnoredSignatures.Contains(GetGroupSignature(g.Players)))
         .ToList();
 
         IsSearching = false; StateHasChanged();
     }
 
-    private async Task MergePlayers(List<Player> group, Player survivor)
+    // MODAL-STEUERUNG
+    private void OpenCustomMergeModal(DuplicateGroup group)
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-        int mergedGames = 0;
-        var victims = group.Where(p => p.PlayerId != survivor.PlayerId).ToList();
+        selectedGroup = group;
+        var bestPlayer = group.Players.First();
+        customFirstName = bestPlayer.Firstname;
+        customLastName = bestPlayer.Lastname;
+        showCustomMergeModal = true;
+    }
+    private void CloseCustomMergeModal() => showCustomMergeModal = false;
 
-        foreach (var victim in victims)
+
+    // NEU: IGNORIEREN MIT GEDÄCHTNIS
+    private async Task IgnoreGroup(DuplicateGroup group)
+    {
+        group.IsIgnored = true;
+        StateHasChanged();
+        await Task.Delay(500);
+
+        // Zur Ignorieren-Liste hinzufügen & im Browser speichern
+        string signature = GetGroupSignature(group.Players);
+        IgnoredSignatures.Add(signature);
+        await SaveMemory();
+
+        DuplicateGroups.Remove(group);
+        StateHasChanged();
+    }
+
+
+    private async Task MergePlayersIntoSurvivor(DuplicateGroup group, int survivorId) => await ExecuteMerge(group,
+    survivorId, null, null);
+    private async Task MergePlayersCustom() => await ExecuteMerge(selectedGroup!, null, customFirstName, customLastName);
+
+    private async Task ExecuteMerge(DuplicateGroup group, int? existingSurvivorId, string? newFirstName, string?
+    newLastName)
+    {
+        IsMerging = true; SuccessMessage = ""; ErrorMessage = ""; StateHasChanged();
+
+        try
         {
-            var victimTournaments = await db.PlayerTournaments.Where(pt => pt.PlayerId == victim.PlayerId).ToListAsync();
-            foreach (var pt in victimTournaments)
-            {
-                // Prüfen ob der Survivor das Turnier schon gespielt hat (keine doppelten Runden!)
-                bool alreadyHasTourney = await db.PlayerTournaments.AnyAsync(s => s.PlayerId == survivor.PlayerId && s.TournamentId ==
-                pt.TournamentId);
-                if (!alreadyHasTourney) { pt.PlayerId = survivor.PlayerId; db.PlayerTournaments.Update(pt); mergedGames++; }
-                else { db.PlayerTournaments.Remove(pt); } // Wenn beide dasselbe Turnier haben, löschen wir den doppelten Eintrag
-            }
-            var dbVictim = await db.Players.FindAsync(victim.PlayerId);
-            if (dbVictim != null) db.Players.Remove(dbVictim);
-        }
+            using var db = await DbFactory.CreateDbContextAsync();
+            var victimIds = group.Players.Select(p => p.PlayerId).ToList();
+            var playersInDb = await db.Players.Include(p => p.PlayerTournaments).Where(p =>
+            victimIds.Contains(p.PlayerId)).ToListAsync();
 
-        await db.SaveChangesAsync();
-        SuccessMessage = $"Erfolgreich! {victims.Count} Spieler gelöscht und {mergedGames} Turnier-Einträge auf '{survivor.Firstname} {survivor.Lastname}' übertragen.";
-        await JS.InvokeVoidAsync("triggerMergeConfetti");
-        await AnalyzeDatabase();
+            if (!playersInDb.Any()) { ErrorMessage = "Fehler: Datensätze nicht mehr in der DB gefunden."; return; }
+
+            Player survivor = existingSurvivorId.HasValue
+            ? playersInDb.First(p => p.PlayerId == existingSurvivorId.Value)
+            : playersInDb.OrderByDescending(p => p.PlayerTournaments.Count).First();
+
+            if (!existingSurvivorId.HasValue)
+            {
+                survivor.Firstname = newFirstName!;
+                survivor.Lastname = newLastName!;
+            }
+
+            var victims = playersInDb.Where(p => p.PlayerId != survivor.PlayerId).ToList();
+            int mergedGamesCount = 0;
+
+            foreach (var victim in victims)
+            {
+                foreach (var vt in victim.PlayerTournaments.ToList())
+                {
+                    if (!survivor.PlayerTournaments.Any(st => st.TournamentId == vt.TournamentId))
+                    {
+                        vt.PlayerId = survivor.PlayerId;
+                        mergedGamesCount++;
+                    }
+                    else { db.PlayerTournaments.Remove(vt); }
+                }
+                db.Players.Remove(victim);
+            }
+
+            var bestClub = victims.FirstOrDefault(v => v.ClubId.HasValue)?.ClubId;
+            if (!survivor.ClubId.HasValue && bestClub.HasValue) survivor.ClubId = bestClub;
+
+            await db.SaveChangesAsync();
+
+            SuccessMessage = $"Erfolgreich! {victims.Count} Doppelgänger gelöscht. {mergedGamesCount} Ergebnisse auf '{survivor.Firstname} {survivor.Lastname}' übertragen.";
+            await JS.InvokeVoidAsync("triggerMergeConfetti");
+            CloseCustomMergeModal();
+            await AnalyzeDatabase();
+        }
+        catch (Exception ex) { ErrorMessage = "Fehler: " + ex.Message; }
+        finally { IsMerging = false; StateHasChanged(); }
     }
 }
