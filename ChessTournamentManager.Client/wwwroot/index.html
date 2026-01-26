@@ -1,27 +1,45 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schülerligaverwaltung</title>
     <base href="/" />
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    
+
     <link href="css/app.css" rel="stylesheet" />
     <link href="ChessTournamentManager.Client.styles.css" rel="stylesheet" />
 
     <style>
-        @keyframes chess-bounce { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-5px) rotate(5deg); } }
-        .animated-chess-piece { display: inline-block; font-size: 2.5rem; color: #ffc107; text-shadow: 0 0 10px rgba(255, 193, 7, 0.5); animation: chess-bounce 3s infinite ease-in-out; }
+        @keyframes chess-bounce {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-5px) rotate(5deg);
+            }
+        }
+
+        .animated-chess-piece {
+            display: inline-block;
+            font-size: 2.5rem;
+            color: #ffc107;
+            text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+            animation: chess-bounce 3s infinite ease-in-out;
+        }
     </style>
 </head>
+
 <body class="bg-light">
     <div id="app">
         <div class="d-flex justify-content-center align-items-center vh-100">
@@ -34,22 +52,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // --- DAS NEUE PROFESSIONELLE PDF-ZEICHEN-SKRIPT ---
         window.pdfManager = {
-            generatePdf: function (season, useStreich, tournaments, groups) {
+            generatePdf: function (season, useBestOf4, tournaments, groups) {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('landscape'); // A4 Querformat
+                const doc = new jsPDF('landscape');
 
                 let mainTitle = `Schülerliga OÖ - Gesamtwertung Saison ${season}`;
-                let subTitle = `Stand: ${new Date().toLocaleDateString('de-DE')}` + (useStreich ? " (inkl. 1 Streichresultat)" : "");
+                // HIER IST DER NEUE TEXT FÜRS PDF:
+                let subTitle = `Stand: ${new Date().toLocaleDateString('de-DE')}` + (useBestOf4 ? " (Wertung: Beste 4 Runden)" : "");
 
                 let totalPagesExp = "{total_pages_count_string}";
 
                 groups.forEach((group, groupIndex) => {
-                    // Jede neue Altersklasse beginnt auf einer NEUEN SEITE (außer die allererste)
                     if (groupIndex > 0) doc.addPage();
 
-                    // ÜBERSCHRIFTEN für die jeweilige Klasse
                     doc.setFontSize(18);
                     doc.setFont("helvetica", "bold");
                     doc.setTextColor(33, 37, 41);
@@ -60,26 +76,16 @@
                     doc.setTextColor(100);
                     doc.text(subTitle, 14, 21);
 
-                    // Der Name der Altersklasse in Blau hervorgehoben
                     doc.setFontSize(15);
                     doc.setFont("helvetica", "bold");
-                    doc.setTextColor(13, 110, 253); 
+                    doc.setTextColor(13, 110, 253);
                     doc.text(`Altersklasse ${group.groupName} (${group.rows.length} Spieler)`, 14, 32);
 
-                    // TABELLEN-DATEN AUFBEREITEN
                     const head = [['Rang', 'Name', 'Verein', 'Punkte', 'Spiele', ...tournaments.map(t => t.name)]];
                     const body = group.rows.map(row => {
-                        return [
-                            row.rank + ".", 
-                            row.name, 
-                            row.club, 
-                            row.points, 
-                            row.games, 
-                            ...row.results
-                        ];
+                        return [row.rank + ".", row.name, row.club, row.points, row.games, ...row.results];
                     });
 
-                    // TABELLE ZEICHNEN
                     doc.autoTable({
                         startY: 38,
                         head: head,
@@ -88,49 +94,28 @@
                         headStyles: { fillColor: [33, 37, 41], textColor: 255, fontStyle: 'bold', halign: 'center' },
                         bodyStyles: { textColor: 50, fontSize: 9.5 },
                         alternateRowStyles: { fillColor: [248, 249, 250] },
-                        columnStyles: {
-                            0: { halign: 'center', fontStyle: 'bold', textColor: [0, 0, 0] }, // Rang
-                            1: { fontStyle: 'bold', textColor: [0, 0, 0] }, // Name
-                            2: { cellWidth: 35 }, // Verein
-                            3: { halign: 'center', fontStyle: 'bold', textColor: [25, 135, 84] }, // Punkte (Grün)
-                            4: { halign: 'center' } // Spiele
-                        },
-                        // Alle Turnierspalten automatisch zentrieren
-                        didParseCell: function(data) {
-                            if (data.section === 'body' && data.column.index >= 5) {
-                                data.cell.styles.halign = 'center';
-                                if (data.cell.raw !== "-") data.cell.styles.fontStyle = 'bold';
-                            }
-                        },
-                        // FUSSZEILE MIT SEITENZAHL (Pro Seite)
+                        columnStyles: { 0: { halign: 'center', fontStyle: 'bold', textColor: [0, 0, 0] }, 1: { fontStyle: 'bold', textColor: [0, 0, 0] }, 2: { cellWidth: 35 }, 3: { halign: 'center', fontStyle: 'bold', textColor: [25, 135, 84] }, 4: { halign: 'center' } },
+                        didParseCell: function (data) { if (data.section === 'body' && data.column.index >= 5) { data.cell.styles.halign = 'center'; if (data.cell.raw !== "-") data.cell.styles.fontStyle = 'bold'; } },
                         didDrawPage: function (data) {
                             let str = "Seite " + doc.internal.getNumberOfPages();
-                            if (typeof doc.putTotalPages === 'function') {
-                                str = str + " von " + totalPagesExp;
-                            }
-                            doc.setFontSize(8);
-                            doc.setTextColor(150);
+                            if (typeof doc.putTotalPages === 'function') { str = str + " von " + totalPagesExp; }
+                            doc.setFontSize(8); doc.setTextColor(150);
                             doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
-                            doc.text("Schülerliga - Kreis Mitte", doc.internal.pageSize.width - data.settings.margin.right - 50, doc.internal.pageSize.height - 10);
+                            doc.text("Generiert mit der Schülerligaverwaltung", doc.internal.pageSize.width - data.settings.margin.right - 50, doc.internal.pageSize.height - 10);
                         }
                     });
                 });
 
-                // Gesamt-Seitenzahl eintragen
-                if (typeof doc.putTotalPages === 'function') {
-                    doc.putTotalPages(totalPagesExp);
-                }
-
-                // PDF SPEICHERN
+                if (typeof doc.putTotalPages === 'function') { doc.putTotalPages(totalPagesExp); }
                 doc.save(`Schuelerliga_Gesamtwertung_${season.replace('/', '_')}.pdf`);
             }
         };
 
-        // --- ALTE HILFSFUNKTIONEN ---
         window.downloadFile = (fileName, content) => { const link = document.createElement('a'); link.download = fileName; link.href = "data:text/csv;charset=utf-8,%EF%BB%BF" + encodeURIComponent(content); document.body.appendChild(link); link.click(); document.body.removeChild(link); };
         window.downloadBinaryFile = (fileName, base64String) => { const link = document.createElement('a'); link.download = fileName; link.href = "data:application/octet-stream;base64," + base64String; document.body.appendChild(link); link.click(); document.body.removeChild(link); };
         window.chartManager = { instances: {}, renderBarChart: (canvasId, labelName, labels, data, color) => { const ctx = document.getElementById(canvasId); if (!ctx) return; if (window.chartManager.instances[canvasId]) window.chartManager.instances[canvasId].destroy(); window.chartManager.instances[canvasId] = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: labelName, data: data, backgroundColor: color || '#0d6efd', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } } } }); } };
         window.browserStorage = { dbName: "ChessTournamentDB", storeName: "databaseFiles", init: () => new Promise((resolve, reject) => { const req = indexedDB.open(window.browserStorage.dbName, 1); req.onupgradeneeded = e => e.target.result.createObjectStore(window.browserStorage.storeName); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(); }), saveDb: async (base64Data) => { const db = await window.browserStorage.init(); return new Promise(r => { const tx = db.transaction(window.browserStorage.storeName, "readwrite"); tx.objectStore(window.browserStorage.storeName).put(base64Data, "chess.db"); tx.oncomplete = () => r(true); }); }, loadDb: async () => { const db = await window.browserStorage.init(); return new Promise(r => { const tx = db.transaction(window.browserStorage.storeName, "readonly"); const req = tx.objectStore(window.browserStorage.storeName).get("chess.db"); req.onsuccess = () => r(req.result); req.onerror = () => r(null); }); }, deleteDb: async () => { const db = await window.browserStorage.init(); return new Promise(r => { const tx = db.transaction(window.browserStorage.storeName, "readwrite"); tx.objectStore(window.browserStorage.storeName).delete("chess.db"); tx.oncomplete = () => r(true); }); } };
     </script>
 </body>
+
 </html>

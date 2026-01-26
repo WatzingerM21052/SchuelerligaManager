@@ -29,8 +29,8 @@
                 <div class="col-md-3"><select class="form-select form-select-sm" @onchange="OnClubChanged"><option value="Alle">Alle Vereine</option>@foreach (var c in AvailableClubs) { <option value="@c" selected="@(SelectedClub == c)">@c</option> }</select></div>
                 <div class="col-md-4 d-flex justify-content-end pb-1">
                     <div class="form-check form-switch fs-6">
-                        <input class="form-check-input" type="checkbox" id="streich" @bind="UseStreichresultat" @bind:after="ApplyFilters">
-                        <label class="form-check-label fw-bold text-dark small" for="streich"><i class="bi bi-scissors me-1"></i> 1 Streichresultat (ab 3 Turnieren)</label>
+                        <input class="form-check-input" type="checkbox" id="bestof4" @bind="UseBestOf4" @bind:after="ApplyFilters">
+                        <label class="form-check-label fw-bold text-dark small" for="bestof4"><i class="bi bi-trophy me-1"></i> Nur beste 4 Runden werten</label>
                     </div>
                 </div>
             </div>
@@ -107,7 +107,11 @@
 
 @code {
     private List<Tournament> AllTournaments = new(); private List<Tournament> FilteredTournaments = new(); private List<LeaderboardRow>? AllRows; private List<LeaderboardRow> FilteredRows = new();
-    private string SelectedSeason = ""; private string SelectedAge = "Alle"; private string SelectedClub = "Alle"; private bool UseStreichresultat = false;
+    private string SelectedSeason = ""; private string SelectedAge = "Alle"; private string SelectedClub = "Alle"; 
+    
+    // NEU: UMBENANNT ZU "UseBestOf4"
+    private bool UseBestOf4 = false;
+
     private List<string> AvailableSeasons = new(); private List<string> AvailableAges = new(); private List<string> AvailableClubs = new();
 
     protected override async Task OnInitializedAsync()
@@ -135,7 +139,25 @@
         var currentTournamentIds = FilteredTournaments.Select(t => t.TournamentId).ToHashSet();
         var query = AllRows.AsEnumerable(); if (SelectedAge != "Alle") query = query.Where(r => r.AgeGroup == SelectedAge); if (SelectedClub != "Alle") query = query.Where(r => r.ClubName == SelectedClub);
         var listToProcess = query.ToList();
-        foreach (var row in listToProcess) { row.Results = row.AllResults.Where(kvp => currentTournamentIds.Contains(kvp.Key)).ToDictionary(k => k.Key, v => v.Value); row.TournamentsCount = row.Results.Count; row.RawTotalPoints = row.Results.Values.Sum(r => r.Points); if (UseStreichresultat && row.TournamentsCount >= 3) { row.EffectivePoints = row.RawTotalPoints - row.Results.Values.Min(r => r.Points); } else { row.EffectivePoints = row.RawTotalPoints; } }
+        
+        foreach (var row in listToProcess) 
+        { 
+            row.Results = row.AllResults.Where(kvp => currentTournamentIds.Contains(kvp.Key)).ToDictionary(k => k.Key, v => v.Value); 
+            row.TournamentsCount = row.Results.Count; 
+            row.RawTotalPoints = row.Results.Values.Sum(r => r.Points); 
+
+            // DIE NEUE "BEST-OF-4" LOGIK
+            // Wenn der Schalter AN ist und der Spieler MEHR als 4 Runden hat, nehme nur die besten 4 Punkte
+            if (UseBestOf4 && row.TournamentsCount > 4) 
+            { 
+                row.EffectivePoints = row.Results.Values.OrderByDescending(r => r.Points).Take(4).Sum(r => r.Points); 
+            } 
+            else 
+            { 
+                row.EffectivePoints = row.RawTotalPoints; 
+            } 
+        }
+
         listToProcess = listToProcess.Where(r => r.TournamentsCount > 0).ToList();
         AvailableAges = listToProcess.Select(r => r.AgeGroup).Distinct().OrderBy(a => a).ToList(); AvailableClubs = listToProcess.Select(r => r.ClubName).Distinct().OrderBy(c => c).ToList();
         var finalSortedList = new List<LeaderboardRow>();
@@ -145,37 +167,21 @@
 
     private string Truncate(string value, int maxChars) { return value.Length <= maxChars ? value : value.Substring(0, maxChars) + "..."; }
 
-    // --- DER NEUE PROFESSIONELLE JS-PDF EXPORT ---
     private async Task GenerateProfessionalPdf()
     {
-        // 1. Turnier-Spaltenkopfdaten vorbereiten
         var tournamentsData = FilteredTournaments.Select(t => new { name = Truncate(t.Name, 12) }).ToList();
-
-        // 2. Gruppen vorbereiten (Genau wie in der Web-Ansicht)
         var printGroups = SelectedAge == "Alle" ? FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g => g.Key) : FilteredRows.GroupBy(r => r.AgeGroup);
-
-        // 3. Das große JSON-Objekt für Javascript bauen
-        var groupsData = printGroups.Select(g => new {
-            groupName = g.Key,
-            rows = g.Select(r => new {
-                rank = r.Rank,
-                name = $"{r.Lastname} {r.Firstname}",
-                club = string.IsNullOrWhiteSpace(r.ClubName) || r.ClubName == "Vereinslos" ? "-" : r.ClubName,
-                points = r.EffectivePoints,
-                games = r.TournamentsCount,
-                results = FilteredTournaments.Select(t => r.Results.TryGetValue(t.TournamentId, out var res) ? $"{res.Rank}." : "-").ToList()
-            }).ToList()
-        }).ToList();
-
-        // 4. An jsPDF senden!
-        await JS.InvokeVoidAsync("window.pdfManager.generatePdf", SelectedSeason, UseStreichresultat, tournamentsData, groupsData);
+        var groupsData = printGroups.Select(g => new { groupName = g.Key, rows = g.Select(r => new { rank = r.Rank, name = $"{r.Lastname} {r.Firstname}", club = string.IsNullOrWhiteSpace(r.ClubName) || r.ClubName == "Vereinslos" ? "-" : r.ClubName, points = r.EffectivePoints, games = r.TournamentsCount, results = FilteredTournaments.Select(t => r.Results.TryGetValue(t.TournamentId, out var res) ? $"{res.Rank}." : "-").ToList() }).ToList() }).ToList();
+        
+        // Den BestOf4 Parameter an JS schicken für den Text
+        await JS.InvokeVoidAsync("window.pdfManager.generatePdf", SelectedSeason, UseBestOf4, tournamentsData, groupsData);
     }
 
     private async Task ExportMatrixToExcel()
     {
         var sb = new StringBuilder();
         sb.AppendLine($"Schuelerliga OOe - Gesamtwertung Saison {SelectedSeason}");
-        sb.AppendLine($"Stand: {DateTime.Now.ToShortDateString()} {(UseStreichresultat ? "(inkl. 1 Streichresultat)" : "")}");
+        sb.AppendLine($"Stand: {DateTime.Now.ToShortDateString()} {(UseBestOf4 ? "(Wertung: Beste 4 Runden)" : "")}");
         sb.AppendLine();
         var printGroups = SelectedAge == "Alle" ? FilteredRows.GroupBy(r => r.AgeGroup).OrderBy(g => g.Key.Length).ThenBy(g => g.Key) : FilteredRows.GroupBy(r => r.AgeGroup);
         foreach (var group in printGroups)

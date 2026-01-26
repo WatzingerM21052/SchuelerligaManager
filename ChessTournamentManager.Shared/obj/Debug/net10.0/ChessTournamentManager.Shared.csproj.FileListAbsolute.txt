@@ -10,3 +10,4 @@ C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Share
 C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\refint\ChessTournamentManager.Shared.dll
 C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.pdb
 C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ref\ChessTournamentManager.Shared.dll
+C:\Users\matth\OneDrive\Desktop\SchuelerligaManager\ChessTournamentManager.Shared\obj\Debug\net10.0\ChessTournamentManager.Shared.sourcelink.json
