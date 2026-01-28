@@ -4,7 +4,7 @@
 @inject IDbContextFactory<ChessDbContext> DbFactory
 @inject NavigationManager NavManager
 
-<PageTitle>Vereine</PageTitle>
+<PageTitle>SL-Manager - Vereine</PageTitle>
 
 <div class="container-fluid px-4 py-3 min-vh-100 bg-light">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
@@ -12,12 +12,15 @@
             <h2 class="fw-bold text-dark mb-0"><i class="bi bi-buildings text-primary me-2"></i>Vereine</h2>
             <span class="text-muted small">Übersicht aller Schachvereine und ihrer Mitglieder</span>
         </div>
-        <button class="btn btn-primary shadow-sm" @onclick="OpenAddModal"><i class="bi bi-plus-lg me-1"></i> Neuer Verein</button>
+        <button class="btn btn-primary shadow-sm" @onclick="OpenAddModal"><i class="bi bi-plus-lg me-1"></i> Neuer
+            Verein</button>
     </div>
 
     @if (AllClubs == null)
     {
-        <div class="d-flex justify-content-center mt-5"><div class="spinner-border text-primary"></div></div>
+        <div class="d-flex justify-content-center mt-5">
+            <div class="spinner-border text-primary"></div>
+        </div>
     }
     else
     {
@@ -37,13 +40,16 @@
                             <tr>
                                 <td class="ps-4 fw-bold text-dark fs-6">@club.Name</td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary fw-bold" @onclick="() => OpenPlayersModal(club)">
+                                    <button class="btn btn-sm btn-outline-primary fw-bold"
+                                        @onclick="() => OpenPlayersModal(club)">
                                         <i class="bi bi-people-fill me-1"></i> @(club.Players?.Count ?? 0) Spieler anzeigen
                                     </button>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-light border me-1" @onclick="() => OpenEditModal(club)" title="Umbenennen"><i class="bi bi-pencil"></i></button>
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => OpenDeleteModal(club)" title="Löschen"><i class="bi bi-trash"></i></button>
+                                    <button class="btn btn-sm btn-light border me-1" @onclick="() => OpenEditModal(club)"
+                                        title="Umbenennen"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => OpenDeleteModal(club)"
+                                        title="Löschen"><i class="bi bi-trash"></i></button>
                                 </td>
                             </tr>
                         }
@@ -72,7 +78,9 @@
                         <div class="list-group shadow-sm">
                             @foreach (var player in SelectedClub.Players.OrderBy(p => p.Lastname))
                             {
-                                <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3" @onclick="() => NavigateToPlayer(player.PlayerId)">
+                                <button
+                                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3"
+                                    @onclick="() => NavigateToPlayer(player.PlayerId)">
                                     <div>
                                         <span class="fw-bold text-dark fs-6">@player.Lastname @player.Firstname</span>
                                         @if (!string.IsNullOrWhiteSpace(player.AgeGroup))
@@ -90,7 +98,8 @@
                     }
                     else
                     {
-                        <div class="alert alert-secondary border-0 text-center mb-0">Keine Spieler für diesen Verein gefunden.</div>
+                        <div class="alert alert-secondary border-0 text-center mb-0">Keine Spieler für diesen Verein gefunden.
+                        </div>
                     }
                 </div>
                 <div class="modal-footer border-top-0">
@@ -133,7 +142,8 @@
                 </div>
                 <div class="modal-body">
                     <p>Möchtest du den Verein <strong>"@ClubToDelete.Name"</strong> unwiderruflich löschen?</p>
-                    <p class="text-danger small">Hinweis: Die Spieler des Vereins werden nicht gelöscht, sie werden lediglich als "vereinslos" markiert.</p>
+                    <p class="text-danger small">Hinweis: Die Spieler des Vereins werden nicht gelöscht, sie werden
+                        lediglich als "vereinslos" markiert.</p>
                 </div>
                 <div class="modal-footer border-0">
                     <button class="btn btn-secondary" @onclick="CloseModals">Abbrechen</button>
@@ -146,7 +156,7 @@
 
 @code {
     private List<Club>? AllClubs;
-    
+
     private bool IsEditModalOpen = false;
     private bool IsDeleteModalOpen = false;
     private bool IsPlayersModalOpen = false;
@@ -175,11 +185,43 @@
     // --- MODAL STEUERUNG ---
     private void OpenPlayersModal(Club c) { SelectedClub = c; IsPlayersModalOpen = true; }
     private void OpenAddModal() { EditingClub = new Club(); IsEditModalOpen = true; }
-    private void OpenEditModal(Club c) { EditingClub = new Club { ClubId = c.ClubId, Name = c.Name }; IsEditModalOpen = true; }
+    private void OpenEditModal(Club c)
+    {
+        EditingClub = new Club { ClubId = c.ClubId, Name = c.Name }; IsEditModalOpen =
+    true;
+    }
     private void OpenDeleteModal(Club c) { ClubToDelete = c; IsDeleteModalOpen = true; }
-    private void CloseModals() { IsEditModalOpen = false; IsDeleteModalOpen = false; IsPlayersModalOpen = false; EditingClub = null; ClubToDelete = null; SelectedClub = null; }
+    private void CloseModals()
+    {
+        IsEditModalOpen = false; IsDeleteModalOpen = false; IsPlayersModalOpen = false; EditingClub
+    = null; ClubToDelete = null; SelectedClub = null;
+    }
 
     // --- DATENBANK OPERATIONEN ---
-    private async Task SaveClub() { if (EditingClub == null || string.IsNullOrWhiteSpace(EditingClub.Name)) return; using var db = await DbFactory.CreateDbContextAsync(); if (EditingClub.ClubId == 0) { db.Clubs.Add(EditingClub); } else { var dbC = await db.Clubs.FindAsync(EditingClub.ClubId); if (dbC != null) { dbC.Name = EditingClub.Name; db.Clubs.Update(dbC); } } await db.SaveChangesAsync(); await LoadClubs(); CloseModals(); }
-    private async Task DeleteClub() { if (ClubToDelete == null) return; using var db = await DbFactory.CreateDbContextAsync(); var dbC = await db.Clubs.Include(c => c.Players).FirstOrDefaultAsync(c => c.ClubId == ClubToDelete.ClubId); if (dbC != null) { foreach (var player in dbC.Players) { player.ClubId = null; } db.Clubs.Remove(dbC); await db.SaveChangesAsync(); } await LoadClubs(); CloseModals(); }
+    private async Task SaveClub()
+    {
+        if (EditingClub == null || string.IsNullOrWhiteSpace(EditingClub.Name)) return; using
+    var db = await DbFactory.CreateDbContextAsync(); if (EditingClub.ClubId == 0) { db.Clubs.Add(EditingClub); }
+        else
+        {
+            var
+    dbC = await db.Clubs.FindAsync(EditingClub.ClubId); if (dbC != null)
+            {
+                dbC.Name = EditingClub.Name;
+                db.Clubs.Update(dbC);
+            }
+        }
+        await db.SaveChangesAsync(); await LoadClubs(); CloseModals();
+    }
+    private async Task DeleteClub()
+    {
+        if (ClubToDelete == null) return; using var db = await
+    DbFactory.CreateDbContextAsync(); var dbC = await db.Clubs.Include(c => c.Players).FirstOrDefaultAsync(c => c.ClubId ==
+    ClubToDelete.ClubId); if (dbC != null)
+        {
+            foreach (var player in dbC.Players) { player.ClubId = null; }
+            db.Clubs.Remove(dbC); await db.SaveChangesAsync();
+        }
+        await LoadClubs(); CloseModals();
+    }
 }
