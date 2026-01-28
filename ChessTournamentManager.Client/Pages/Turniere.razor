@@ -1,6 +1,7 @@
 @page "/turniere"
 @using ChessTournamentManager.Shared.Models
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Web
 @inject IDbContextFactory<ChessDbContext> DbFactory
 @inject IJSRuntime JS
 
@@ -275,8 +276,7 @@
         .ToListAsync();
     }
 
-    private string GetSeasonString(DateTime date) => date.Month >= 9 ? $"{date.Year}/{date.Year + 1}" : $"{date.Year -
-    1}/{date.Year}";
+    private string GetSeasonString(DateTime date) => date.Month >= 9 ? $"{date.Year}/{date.Year + 1}" : $"{date.Year - 1}/{date.Year}";
 
     private void OpenResultManager(Tournament t)
     {
