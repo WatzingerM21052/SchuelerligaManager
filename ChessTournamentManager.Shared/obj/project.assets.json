@@ -552,11 +552,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\matth\\OneDrive\\Desktop\\SchuelerligaManager\\ChessTournamentManager.Shared\\ChessTournamentManager.Shared.csproj",
+      "projectUniqueName": "C:\\Users\\matth\\OneDrive\\Desktop\\Schach SL und SV\\SchuelerligaManager\\ChessTournamentManager.Shared\\ChessTournamentManager.Shared.csproj",
       "projectName": "ChessTournamentManager.Shared",
-      "projectPath": "C:\\Users\\matth\\OneDrive\\Desktop\\SchuelerligaManager\\ChessTournamentManager.Shared\\ChessTournamentManager.Shared.csproj",
+      "projectPath": "C:\\Users\\matth\\OneDrive\\Desktop\\Schach SL und SV\\SchuelerligaManager\\ChessTournamentManager.Shared\\ChessTournamentManager.Shared.csproj",
       "packagesPath": "C:\\Users\\matth\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\matth\\OneDrive\\Desktop\\SchuelerligaManager\\ChessTournamentManager.Shared\\obj\\",
+      "outputPath": "C:\\Users\\matth\\OneDrive\\Desktop\\Schach SL und SV\\SchuelerligaManager\\ChessTournamentManager.Shared\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

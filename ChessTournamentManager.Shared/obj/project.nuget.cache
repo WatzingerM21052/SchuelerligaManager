@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "k6rZUWUoAcU=",
+  "dgSpecHash": "6pjm8AJZz98=",
   "success": true,
-  "projectFilePath": "C:\\Users\\matth\\OneDrive\\Desktop\\SchuelerligaManager\\ChessTournamentManager.Shared\\ChessTournamentManager.Shared.csproj",
+  "projectFilePath": "C:\\Users\\matth\\OneDrive\\Desktop\\Schach SL und SV\\SchuelerligaManager\\ChessTournamentManager.Shared\\ChessTournamentManager.Shared.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\matth\\.nuget\\packages\\microsoft.entityframeworkcore\\10.0.2\\microsoft.entityframeworkcore.10.0.2.nupkg.sha512",
     "C:\\Users\\matth\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\10.0.2\\microsoft.entityframeworkcore.abstractions.10.0.2.nupkg.sha512",

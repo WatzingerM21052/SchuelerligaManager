@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "8mctroS0JjQ=",
+  "dgSpecHash": "GWc+kQoxDk0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\matth\\OneDrive\\Desktop\\SchuelerligaManager\\ChessTournamentManager.Client\\ChessTournamentManager.Client.csproj",
+  "projectFilePath": "C:\\Users\\matth\\OneDrive\\Desktop\\Schach SL und SV\\SchuelerligaManager\\ChessTournamentManager.Client\\ChessTournamentManager.Client.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\matth\\.nuget\\packages\\exceldatareader\\3.8.0\\exceldatareader.3.8.0.nupkg.sha512",
     "C:\\Users\\matth\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.2\\microsoft.aspnetcore.app.internal.assets.10.0.2.nupkg.sha512",
